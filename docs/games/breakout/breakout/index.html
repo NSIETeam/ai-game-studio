@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=480,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<title>星碎 Breakout</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;display:flex;justify-content:center;align-items:center;min-height:100dvh;font-family:'Segoe UI',system-ui,sans-serif}
+canvas{display:block;width:100%;max-width:480px;height:auto;aspect-ratio:480/800;touch-action:none;border-radius:8px;box-shadow:0 0 60px rgba(0,212,255,.15)}
+</style>
+</head>
+<body>
+<canvas id="c" width="480" height="800"></canvas>
+<script>
+const C=document.getElementById('c'),ctx=C.getContext('2d');
+const W=480,H=800;
+// --- constants ---
+const PADDLE_W=80,PADDLE_H=12,PADDLE_Y=740,BALL_R=6,BRICK_W=56,BRICK_H=16,BRICK_GAP=4,BRICK_TOP=60;
+const ROW_COLORS=['#ff4444','#ff8800','#ffdd00','#44cc44','#4488ff','#aa44ff'];
+const BALL_SPEED_BASE=360,COMBO_DECAY=1.2; // seconds without hit to reset combo
+const MAX_LIVES=5,LIFE_BONUS=5000;
+
+// --- state ---
+let state='menu'; // menu | launch | playing | paused | gameover | stageClear
+let lives=3,score=0,level=0,combo=0,comboTimer=0,lastHitTime=0,stageClearTimer=0;
+let bricks=[],particles=[],pTrail=[],bTrail=[],screenFlash=0;
+let paddle={x:W/2-PADDLE_W/2,y:PADDLE_Y,w:PADDLE_W,h:PADDLE_H};
+let ball={x:W/2,y:PADDLE_Y-PADDLE_H/2-BALL_R,r:BALL_R,vx:0,vy:0};
+let keys={},touchX=null,touchActive=false,launchQueued=false;
+let animId=null;
+
+// --- input ---
+document.addEventListener('keydown',e=>{
+  keys[e.key]=true;
+  if(e.key===' '||e.key==='Space'){e.preventDefault();onAction()}
+});
+document.addEventListener('keyup',e=>keys[e.key]=false);
+C.addEventListener('touchstart',e=>{
+  e.preventDefault();const t=e.touches[0];
+  touchX=t.clientX;touchActive=true;onAction();
+},{passive:false});
+C.addEventListener('touchmove',e=>{
+  e.preventDefault();const t=e.touches[0];
+  touchX=t.clientX;
+},{passive:false});
+C.addEventListener('touchend',e=>{e.preventDefault();touchActive=false;touchX=null},{passive:false});
+
+function onAction(){
+  if(state==='menu'){startGame();return}
+  if(state==='launch'){launchQueued=true;return}
+  if(state==='paused'){state='playing';return}
+  if(state==='gameover'){state='menu';return}
+  if(state==='stageClear'){nextLevel();return}
+}
+
+// --- game logic ---
+function startGame(){
+  lives=3;score=0;level=0;combo=0;screenFlash=0;lastHitTime=0;
+  nextLevel();
+}
+function nextLevel(){
+  state='launch';launchQueued=false;level++;
+  const rows=Math.min(4+level-1,8);
+  bricks=[];
+  for(let r=0;r<rows;r++){
+    const cols=Math.floor((W-BRICK_GAP)/(BRICK_W+BRICK_GAP));
+    const totalW=cols*(BRICK_W+BRICK_GAP)-BRICK_GAP;
+    const ox=(W-totalW)/2;
+    for(let c=0;c<cols;c++){
+      let hp=1,metal=false,floatOffset=0;
+      if(level>=3&&r>=2){hp=2;metal=true;}
+      if(level>=5)floatOffset=Math.sin(c*1.5+r*2.3)*4;
+      bricks.push({
+        x:ox+c*(BRICK_W+BRICK_GAP),y:BRICK_TOP+r*(BRICK_H+BRICK_GAP),
+        w:BRICK_W,h:BRICK_H,hp,metal,
+        color:ROW_COLORS[r%ROW_COLORS.length],
+        floatOffset,floatPhase:r*2.3+c*1.5
+      });
+    }
+  }
+  resetBall();
+}
+function resetBall(){
+  ball.x=W/2;ball.y=PADDLE_Y-PADDLE_H/2-BALL_R;
+  const a=-Math.PI/2+((Math.random()-.5)*.8);
+  const sp=BALL_SPEED_BASE*(1+(level-1)*0.05);
+  ball.vx=Math.cos(a)*sp;ball.vy=Math.sin(a)*sp;
+  state='launch';launchQueued=false;bTrail=[];
+}
+function addParticles(x,y,color,n){
+  n=n||6+Math.random()*4|0;
+  for(let i=0;i<n&&particles.length<200;i++){
+    const a=Math.random()*Math.PI*2,sp=80+Math.random()*200;
+    particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,l:.4+Math.random()*.6,color,sz:2+Math.random()*3});
+  }
+}
+function update(dt){
+  if(screenFlash>0)screenFlash-=dt;
+  combo-=dt/COMBO_DECAY;if(combo<0)combo=0;
+  if(state!=='playing'&&state!=='launch')return;
+  // paddle trail
+  pTrail.push({x:paddle.x,y:paddle.y});if(pTrail.length>8)pTrail.shift();
+  // paddle movement
+  let dx=0;
+  if(keys['ArrowLeft']||keys['a']||keys['A'])dx=-1;
+  if(keys['ArrowRight']||keys['d']||keys['D'])dx=1;
+  if(touchX!==null){
+    const rect=C.getBoundingClientRect();
+    const tx=(touchX-rect.left)/rect.width*W;
+    paddle.x=tx-paddle.w/2;
+  }
+  paddle.x+=dx*400*dt;
+  paddle.x=Math.max(0,Math.min(W-paddle.w,paddle.x));
+
+  if(state==='launch'){
+    ball.x=paddle.x+paddle.w/2;ball.y=PADDLE_Y-PADDLE_H/2-BALL_R;
+    if(launchQueued){state='playing';launchQueued=false;
+      const a=-Math.PI/2+((Math.random()-.5)*.8);
+      const sp=BALL_SPEED_BASE*(1+(level-1)*0.05);
+      ball.vx=Math.cos(a)*sp;ball.vy=Math.sin(a)*sp;
+    }
+    return;
+  }
+  // ball movement
+  bTrail.push({x:ball.x,y:ball.y});if(bTrail.length>6)bTrail.shift();
+  ball.x+=ball.vx*dt;ball.y+=ball.vy*dt;
+  // wall bounce
+  if(ball.x-ball.r<0){ball.x=ball.r;ball.vx=-ball.vx}
+  if(ball.x+ball.r>W){ball.x=W-ball.r;ball.vx=-ball.vx}
+  if(ball.y-ball.r<0){ball.y=ball.r;ball.vy=-ball.vy}
+  if(ball.y+ball.r>H){ // lost ball
+    lives--;screenFlash=.15;
+    if(lives<=0){state='gameover';return}
+    resetBall();return
+  }
+  // paddle bounce
+  if(ball.vy>0&&ball.y+ball.r>=paddle.y&&ball.y-ball.r<=paddle.y+paddle.h&&
+     ball.x+ball.r>=paddle.x&&ball.x-ball.r<=paddle.x+paddle.w){
+    const hit=(ball.x-paddle.x-paddle.w/2)/(paddle.w/2); // -1..1
+    const angle=-Math.PI/2+hit*.8; // -0.9π to -0.1π
+    const sp=Math.sqrt(ball.vx*ball.vx+ball.vy*ball.vy);
+    ball.vx=Math.cos(angle)*sp;ball.vy=Math.sin(angle)*sp;
+    ball.y=paddle.y-ball.r;
+  }
+  // brick collision - AABB nearest edge
+  let comboHit=false;
+  for(let i=bricks.length-1;i>=0;i--){
+    const b=bricks[i];
+    const fx=b.x+b.floatOffset*Math.sin(b.floatPhase+performance.now()/600);
+    if(ball.x+ball.r>fx&&ball.x-ball.r<fx+b.w&&
+       ball.y+ball.r>b.y&&ball.y-ball.r<b.y+b.h){
+      // resolve nearest edge
+      const cx=ball.x,cy=ball.y;
+      const left=cx-(fx),right=(fx+b.w)-cx;
+      const top=cy-(b.y),bottom=(b.y+b.h)-cy;
+      let min=Math.min(left,right,top,bottom);
+      if(min===left){ball.x=fx-ball.r;ball.vx=-Math.abs(ball.vx)}
+      else if(min===right){ball.x=fx+b.w+ball.r;ball.vx=Math.abs(ball.vx)}
+      else if(min===top){ball.y=b.y-ball.r;ball.vy=-Math.abs(ball.vy)}
+      else{ball.y=b.y+b.h+ball.r;ball.vy=Math.abs(ball.vy)}
+      // wrap speed
+      const sp=Math.sqrt(ball.vx*ball.vx+ball.vy*ball.vy);
+      const base=BALL_SPEED_BASE*(1+(level-1)*0.05);
+      if(sp<base*.8){const r=base/sp;ball.vx*=r;ball.vy*=r}
+      // damage
+      b.hp--;combo++;comboHit=true;
+      if(b.hp<=0){
+        addParticles(fx+b.w/2,b.y+b.h/2,b.color,8);
+        if(b.metal){score+=30}
+        else{score+=10}
+        bricks.splice(i,1);
+        // life bonus (track with lastLifeCheck threshold)
+        const lb=Math.floor(score/LIFE_BONUS);
+        const curExtra=Math.max(0,Math.min(lb,MAX_LIVES-3));
+        const haveExtra=lives-3;
+        if(curExtra>haveExtra)lives=Math.min(MAX_LIVES,lives+curExtra-haveExtra);
+      }else{
+        addParticles(fx+b.w/2,b.y+b.h/2,b.color,4);
+        if(b.metal)score+=15;
+      }
+      break; // one brick per frame
+    }
+  }
+  if(comboHit){
+    // combo bonus applied on hit
+    score+=combo;
+  }
+  // stage clear
+  if(bricks.length===0){
+    if(level>=8){state='gameover'}
+    else if(state!=='stageClear'){state='stageClear';stageClearTimer=1.2}
+  }
+  // particles
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=600*dt; // gravity
+    p.l-=dt;if(p.l<=0||p.y>H||p.x<0||p.x>W)particles.splice(i,1);
+  }
+}
+function draw(){
+  // bg gradient
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#0a0a2e');g.addColorStop(1,'#1a0a3e');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  // screen flash
+  if(screenFlash>0){
+    ctx.fillStyle=`rgba(255,255,255,${screenFlash*4})`;
+    ctx.fillRect(0,0,W,H);
+  }
+  // bricks (floating update)
+  const now=performance.now();
+  for(const b of bricks){
+    const fx=b.x+b.floatOffset*Math.sin(b.floatPhase+now/600);
+    if(b.metal){
+      ctx.shadowColor='#ffd700';ctx.shadowBlur=8;
+      ctx.fillStyle='#ffd700';
+      roundRect(ctx,fx,b.y,b.w,b.h,3);
+      ctx.fill();
+      ctx.strokeStyle='#fff8dc';ctx.lineWidth=2;ctx.stroke();
+      ctx.strokeStyle='#b8860b';ctx.lineWidth=1;ctx.stroke();
+      ctx.shadowBlur=0;
+      // hp indicator
+      if(b.hp===2){
+        ctx.fillStyle='#b8860b';
+        ctx.fillRect(fx+3,b.y+3,b.w-6,3);
+        ctx.fillStyle='#ffd700';
+        ctx.fillRect(fx+3,b.y+3,(b.w-6)/2,3);
+      }
+    }else{
+      ctx.shadowColor=b.color;ctx.shadowBlur=6;
+      ctx.fillStyle=b.color;
+      roundRect(ctx,fx,b.y,b.w,b.h,2);
+      ctx.fill();
+      ctx.shadowBlur=0;
+    }
+  }
+  // paddle trail
+  for(let i=0;i<pTrail.length;i++){
+    const t=pTrail[i],a=i/pTrail.length*.5;
+    ctx.fillStyle=`rgba(0,212,255,${a*.3})`;
+    roundRect(ctx,t.x,paddle.y,paddle.w,paddle.h,6);
+    ctx.fill();
+  }
+  // paddle
+  const pg=ctx.createLinearGradient(paddle.x,0,paddle.x+paddle.w,0);
+  pg.addColorStop(0,'#00d4ff');pg.addColorStop(1,'#7b2ff7');
+  ctx.shadowColor='#00d4ff';ctx.shadowBlur=12;
+  ctx.fillStyle=pg;
+  roundRect(ctx,paddle.x,paddle.y,paddle.w,paddle.h,6);
+  ctx.fill();ctx.shadowBlur=0;
+  // ball trail
+  for(let i=0;i<bTrail.length;i++){
+    const t=bTrail[i],a=i/bTrail.length*.6;
+    ctx.beginPath();
+    ctx.arc(t.x,t.y,ball.r*(.3+.7*i/bTrail.length),0,Math.PI*2);
+    ctx.fillStyle=`rgba(0,212,255,${a*.4})`;
+    ctx.fill();
+  }
+  // ball
+  const bg=ctx.createRadialGradient(ball.x-2,ball.y-2,0,ball.x,ball.y,ball.r);
+  bg.addColorStop(0,'#ffffff');bg.addColorStop(1,'#00d4ff');
+  ctx.shadowColor='#00d4ff';ctx.shadowBlur=16;
+  ctx.fillStyle=bg;
+  ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);ctx.fill();
+  ctx.shadowBlur=0;
+  // particles
+  for(const p of particles){
+    ctx.globalAlpha=Math.max(0,p.l);
+    ctx.fillStyle=p.color;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.sz,0,Math.PI*2);ctx.fill();
+  }
+  ctx.globalAlpha=1;
+  // UI
+  drawUI();
+}
+function drawUI(){
+  ctx.shadowBlur=0;
+  if(state==='menu'||state==='gameover'){
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.shadowColor='#00d4ff';ctx.shadowBlur=20;
+    ctx.fillStyle='#00d4ff';ctx.font='bold 48px "Segoe UI",sans-serif';
+    ctx.fillText('星碎',W/2,230);
+    ctx.shadowBlur=0;
+    ctx.fillStyle='#ffffff';ctx.font='18px "Segoe UI",sans-serif';
+    ctx.fillText('BREAKOUT',W/2,280);
+    if(state==='gameover'){
+      ctx.fillStyle='#ff4444';ctx.font='bold 28px "Segoe UI",sans-serif';
+      ctx.shadowColor='#ff4444';ctx.shadowBlur=12;
+      ctx.fillText('游戏结束',W/2,340);
+      ctx.shadowBlur=0;
+    }
+    ctx.fillStyle='rgba(255,255,255,.7)';ctx.font='16px "Segoe UI",sans-serif';
+    ctx.fillText('得分: '+score, W/2, state==='gameover' ? 390 : 340);
+    if(state==='gameover')ctx.fillText('到达第 '+level+' 关',W/2,420);
+    ctx.fillStyle='#00d4ff';
+    ctx.font='18px "Segoe UI",sans-serif';
+    ctx.shadowColor='#00d4ff';ctx.shadowBlur=8;
+    const tx=state==='menu'?'点击或按 Space 开始':'点击或按 Space 重新开始';
+    ctx.fillText(tx,W/2,state==='gameover'?480:420);
+    ctx.shadowBlur=0;
+    return;
+  }
+  if(state==='paused'){
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,0,W,H);
+    ctx.shadowColor='#00d4ff';ctx.shadowBlur=16;
+    ctx.fillStyle='#00d4ff';ctx.font='bold 36px "Segoe UI",sans-serif';
+    ctx.fillText('暂停',W/2,H/2);
+    ctx.shadowBlur=0;
+    return;
+  }
+  if(state==='stageClear'){
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,0,W,H);
+    ctx.shadowColor='#00d4ff';ctx.shadowBlur=16;
+    ctx.fillStyle='#00d4ff';ctx.font='bold 38px "Segoe UI",sans-serif';
+    ctx.fillText('过关!',W/2,H/2-30);
+    ctx.shadowBlur=0;
+    ctx.fillStyle='#fff';ctx.font='18px "Segoe UI",sans-serif';
+    ctx.fillText('下一关...',W/2,H/2+20);
+    return;
+  }
+  if(state==='launch'){
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillStyle='rgba(255,255,255,.5)';ctx.font='14px "Segoe UI",sans-serif';
+    ctx.fillText('按 Space 或点击发射',W/2,PADDLE_Y-50);
+  }
+  // HUD
+  ctx.textAlign='left';ctx.textBaseline='top';
+  ctx.fillStyle='#fff';ctx.font='16px "Segoe UI",sans-serif';
+  ctx.fillText('得分 '+score,12,14);
+  ctx.textAlign='right';
+  ctx.fillText('第'+level+'关',W-12,14);
+  ctx.fillStyle='#ff4444';ctx.font='14px "Segoe UI",sans-serif';
+  ctx.fillText('♥'.repeat(lives),80,14);
+  ctx.textAlign='left';
+  if(combo>0){
+    ctx.fillStyle='#ffd700';ctx.font='14px "Segoe UI",sans-serif';
+    ctx.fillText('连击 ×'+ (combo|0),12,34);
+  }
+}
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
+}
+function loop(t){
+  const dt=Math.min((t-(lastTime||t))/1000,.05);lastTime=t;
+  if(state==='menu'||state==='gameover'){
+    pTrail.length=0;bTrail.length=0;particles.length=0;
+  }
+  if(state==='stageClear'){
+    stageClearTimer-=dt;
+    draw();
+    if(stageClearTimer>0){animId=requestAnimationFrame(loop);return}
+    // timer expired, advance
+    nextLevel();
+    draw(); // render new level immediately
+    animId=requestAnimationFrame(loop);
+    return;
+  }
+  update(dt);
+  draw();
+  animId=requestAnimationFrame(loop);
+}
+let lastTime=0;
+animId=requestAnimationFrame(loop);
+// pause toggle
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'||e.key==='p'||e.key==='P'){
+    if(state==='playing')state='paused';
+    else if(state==='paused')state='playing';
+  }
+});
+</script>
+</body>
+</html>

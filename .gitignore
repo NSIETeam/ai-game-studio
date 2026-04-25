@@ -1,3 +1,8 @@
-node_modules
+﻿node_modules
 dist
-docs
+docs/task-summary*
+docs/*.md
+task-summary*.md
+
+# But keep docs/ for GitHub Pages
+!docs/
