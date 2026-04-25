@@ -15,7 +15,7 @@
           <a href="#works" :class="{ active: activeSection === 'works' }">{{ lang === 'en' ? 'Works' : '作品' }}</a>
           <a href="#about" :class="{ active: activeSection === 'about' }">{{ lang === 'en' ? 'About' : '关于' }}</a>
           <a href="#cta" :class="{ active: activeSection === 'cta' }">{{ lang === 'en' ? 'Reach Us' : '联系我们' }}</a>
-          <a href="/ai-game-studio/finance-legion/" class="liquid-glass-btn nav-cta" style="gap:4px;font-size:11px;">
+          <a href="https://nsieteam.github.io/ai-finance-legion/" class="liquid-glass-btn nav-cta" style="gap:4px;font-size:11px;">
             <span style="font-size:14px;">✦</span>
             {{ lang === 'en' ? 'Finance Legion' : '财务军团' }}
           </a>
@@ -54,7 +54,7 @@
           <button class="liquid-glass-btn" @click="scrollTo('#cta')">
             {{ lang === 'en' ? 'Create Game' : '创作游戏' }}
           </button>
-          <button class="glass-btn" style="padding:14px 36px;font-size:15px;border-radius:100px;color:#fff;background:rgba(0,184,148,0.06);" @click="window.location='/ai-game-studio/finance-legion/'">
+          <button class="glass-btn" style="padding:14px 36px;font-size:15px;border-radius:100px;color:#fff;background:rgba(0,184,148,0.06);" @click="window.open('https://nsieteam.github.io/ai-finance-legion/','_blank')">
             ✦ {{ lang === 'en' ? 'Try Finance Legion' : '体验财务军团' }}
           </button>
         </div>
@@ -213,7 +213,7 @@
         </button>
         <div style="margin-top:16px;font-size:13px;color:var(--muted)">
           {{ lang === 'en' ? 'Or try our' : '或体验' }}
-          <a href="/ai-game-studio/finance-legion/" style="color:var(--green);text-decoration:underline">
+          <a href="https://nsieteam.github.io/ai-finance-legion/" style="color:var(--green);text-decoration:underline" target="_blank">
             {{ lang === 'en' ? 'AI Finance Legion' : 'AI 财务军团' }}
           </a>
           {{ lang === 'en' ? '— 6-agent financial intelligence pipeline' : '— 6 Agent 财务智能流水线' }}
