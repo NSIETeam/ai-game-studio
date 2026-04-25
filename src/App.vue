@@ -233,14 +233,21 @@ export default {
     const showcaseGames = [
       {
         title: '🦖 小恐龙跑酷',
-        desc: '空格跳跃，躲避障碍。经典 Chrome 恐龙玩法的 AI 生成版。',
-        tags: ['跑酷', 'HTML5', 'Demo'],
-        url: '',
+        desc: '空格跳跃，躲避障碍。经典跑酷玩法，AI 团队 6 Agent 流水线产出。',
+        tags: ['跑酷', 'Canvas', '像素风', 'Demo'],
+        url: 'games/dino-run/index.html',
         placeholderIcon: '🦖'
       },
       {
+        title: '🚀 太空射击',
+        desc: '鼠标控制飞船移动，点击开火打敌机。太空射击经典玩法。',
+        tags: ['射击', '太空', 'Canvas', 'Demo'],
+        url: 'games/space-shooter/index.html',
+        placeholderIcon: '🚀'
+      },
+      {
         title: '🎯 更多作品即将上线',
-        desc: 'AI Game Studio 的 Agent 流水线正在持续产出更多游戏 Demo。',
+        desc: 'AI Game Studio 的 Agent 流水线正在持续产出更多游戏 Demo。输入你的创意，下一个就是你的！',
         tags: ['Coming Soon'],
         url: '',
         placeholderIcon: '🛠️'

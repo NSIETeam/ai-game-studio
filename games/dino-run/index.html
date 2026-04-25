@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>小恐龙跑酷 🦖</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{overflow:hidden;background:#000;display:flex;justify-content:center;align-items:center;height:100vh;font-family:'Courier New',monospace}
+canvas{display:block;cursor:pointer}
+#ui{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:#fff;pointer-events:none;z-index:10}
+#ui h1{font-size:clamp(24px,5vw,48px);margin-bottom:12px;text-shadow:0 0 20px rgba(108,92,231,.6)}
+#ui p{font-size:clamp(14px,2.5vw,20px);opacity:.8;margin-bottom:8px}
+#ui .emoji{font-size:clamp(40px,8vw,80px);margin-bottom:16px}
+#score{position:absolute;top:20px;right:20px;color:#fff;font-size:clamp(18px,3vw,28px);font-family:'Courier New',monospace;text-shadow:0 0 10px rgba(0,184,148,.4);z-index:10}
+#score span{color:#00b894}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="score">🏆 <span id="scoreDisplay">0</span></div>
+<div id="ui">
+  <div class="emoji">🦖</div>
+  <h1>小恐龙跑酷</h1>
+  <p>按 <b>空格</b> / 点击屏幕 跳跃</p>
+  <p style="font-size:12px;opacity:.5">🎮 AI Game Studio · 多 Agent 协作出品</p>
+</div>
+<script>
+// ============================================
+// 🎯 策划官 PRD: 小恐龙跑酷游戏
+// 类型: 横版跑酷 | 目标: 躲避障碍获得高分
+// ============================================
+const canvas = document.getElementById('c')
+const ctx = canvas.getContext('2d')
+const scoreEl = document.getElementById('scoreDisplay')
+const uiEl = document.getElementById('ui')
+
+// --- 🎨 原画师: 配色方案 ---
+const COLORS = {
+  sky1: '#1a1a2e', sky2: '#16213e',
+  ground: '#2d3436', groundLine: '#00b894',
+  dino: '#6c5ce7', dinoEye: '#fff',
+  obstacle: '#e17055', obstacle2: '#fd79a8',
+  cloud: 'rgba(255,255,255,.15)',
+  star: 'rgba(255,255,255,.6)',
+  grass: '#00b894',
+  particle: '#ffd700',
+}
+
+// --- 🏗️ 架构师: 游戏状态和参数 ---
+const GRAVITY = 0.8
+const JUMP_FORCE = -14
+const GROUND_Y_RATIO = 0.75
+const BASE_SPEED = 6
+const MAX_SPEED = 18
+const STAR_COUNT = 60
+
+let W, H, GROUND_Y
+let gameState = 'menu' // menu | playing | gameover
+let score = 0
+let highScore = parseInt(localStorage.getItem('dinoHigh') || '0')
+let speed = BASE_SPEED
+let frame = 0
+let spawnTimer = 0
+let obstacles = []
+let clouds = []
+let particles = []
+let stars = []
+let groundOffset = 0
+
+// --- 💻 主程: 实体定义 ---
+class Dino {
+  constructor() {
+    this.x = 80
+    this.y = 0
+    this.w = 36
+    this.h = 44
+    this.vy = 0
+    this.isJumping = false
+    this.runFrame = 0
+    this.runTimer = 0
+    this.resetY()
+  }
+  resetY() { this.y = GROUND_Y - this.h }
+  jump() {
+    if (!this.isJumping) {
+      this.vy = JUMP_FORCE
+      this.isJumping = true
+    }
+  }
+  update() {
+    this.vy += GRAVITY
+    this.y += this.vy
+    if (this.y >= GROUND_Y - this.h) {
+      this.y = GROUND_Y - this.h
+      this.vy = 0
+      this.isJumping = false
+    }
+    this.runTimer++
+    if (this.runTimer > 6) {
+      this.runFrame = (this.runFrame + 1) % 2
+      this.runTimer = 0
+    }
+    // Particles on run
+    if (!this.isJumping && frame % 4 === 0) {
+      particles.push({
+        x: this.x + 5, y: GROUND_Y - 2,
+        vx: -Math.random() * 2 - 1,
+        vy: -Math.random() * 1.5,
+        life: 20, maxLife: 20,
+        size: Math.random() * 3 + 2,
+        color: COLORS.grass,
+      })
+    }
+  }
+  draw() {
+    // Body
+    ctx.fillStyle = COLORS.dino
+    ctx.shadowColor = COLORS.dino
+    ctx.shadowBlur = 15
+    ctx.beginPath()
+    ctx.roundRect(this.x, this.y, this.w, this.h, 6)
+    ctx.fill()
+    ctx.shadowBlur = 0
+
+    // Head (slightly bigger)
+    ctx.fillStyle = COLORS.dino
+    ctx.beginPath()
+    ctx.roundRect(this.x + 20, this.y - 8, 20, 16, 4)
+    ctx.fill()
+
+    // Eye
+    ctx.fillStyle = COLORS.dinoEye
+    ctx.beginPath()
+    ctx.arc(this.x + 32, this.y - 4, 3, 0, Math.PI * 2)
+    ctx.fill()
+
+    // Mouth
+    ctx.fillStyle = COLORS.dinoEye
+    ctx.fillRect(this.x + 36, this.y + 1, 4, 2)
+
+    // Legs (animated)
+    ctx.fillStyle = COLORS.dino
+    const legOffset = this.isJumping ? 0 : (this.runFrame === 0 ? -3 : 3)
+    ctx.fillRect(this.x + 6, this.y + this.h - 2, 8, 6 + legOffset)
+    ctx.fillRect(this.x + 22, this.y + this.h - 2, 8, 6 - legOffset)
+
+    // Tail
+    ctx.fillRect(this.x - 6, this.y + 10, 6, 4)
+  }
+}
+
+class Obstacle {
+  constructor(type) {
+    this.type = type || Math.floor(Math.random() * 3)
+    this.x = W + 20
+    this.w = [20, 28, 16][this.type]
+    this.h = [24, 32, 28][this.type]
+    this.y = GROUND_Y - this.h
+    this.passed = false
+  }
+  update() {
+    this.x -= speed
+  }
+  draw() {
+    const color = this.type === 0 ? COLORS.obstacle :
+                  this.type === 1 ? COLORS.obstacle2 : '#00cec9'
+    ctx.fillStyle = color
+    ctx.shadowColor = color
+    ctx.shadowBlur = 10
+
+    if (this.type === 0) {
+      // Cactus
+      ctx.fillRect(this.x, this.y, this.w, this.h)
+      ctx.fillRect(this.x - 5, this.y - 8, 6, 14)
+      ctx.fillRect(this.x + this.w - 1, this.y - 6, 6, 12)
+      // Spikes
+      ctx.fillStyle = '#d63031'
+      ctx.fillRect(this.x + 4, this.y - 4, 3, 4)
+      ctx.fillRect(this.x + 13, this.y - 3, 3, 3)
+    } else if (this.type === 1) {
+      // Rock
+      ctx.beginPath()
+      ctx.roundRect(this.x, this.y, this.w, this.h, 4)
+      ctx.fill()
+    } else {
+      // Flying bird
+      ctx.beginPath()
+      ctx.roundRect(this.x, this.y, this.w, this.h, 8)
+      ctx.fill()
+      // Wings
+      ctx.fillRect(this.x - 4, this.y + 4, 6, 3)
+      ctx.fillRect(this.x + this.w - 2, this.y + 4, 6, 3)
+    }
+    ctx.shadowBlur = 0
+  }
+}
+
+// --- 🌟 背景系统 ---
+class Cloud {
+  constructor() { this.reset(true) }
+  reset(init) {
+    this.x = init ? Math.random() * W : W + Math.random() * 100
+    this.y = Math.random() * (GROUND_Y * 0.5) + 20
+    this.w = Math.random() * 80 + 40
+    this.speed = Math.random() * 0.3 + 0.1
+    this.opacity = Math.random() * 0.08 + 0.04
+  }
+  update() {
+    this.x -= this.speed
+    if (this.x + this.w < -50) this.reset()
+  }
+  draw() {
+    ctx.fillStyle = `rgba(255,255,255,${this.opacity})`
+    ctx.beginPath()
+    ctx.ellipse(this.x + this.w/2, this.y, this.w/2, 12, 0, 0, Math.PI*2)
+    ctx.fill()
+    ctx.beginPath()
+    ctx.ellipse(this.x + this.w*0.3, this.y - 8, this.w*0.3, 8, 0, 0, Math.PI*2)
+    ctx.fill()
+  }
+}
+
+// --- 🐛 测试员: 碰撞检测 (AABB) ---
+function checkCollision(a, b) {
+  return a.x < b.x + b.w && a.x + a.w > b.x &&
+         a.y < b.y + b.h && a.y + a.h > b.y
+}
+
+// --- 🚀 发布官: 初始化 ---
+function init() {
+  resize()
+  clouds = Array.from({length: 6}, () => new Cloud())
+  stars = Array.from({length: STAR_COUNT}, () => ({
+    x: Math.random() * 10000,
+    y: Math.random() * GROUND_Y,
+    size: Math.random() * 1.5 + 0.5,
+    speed: Math.random() * 0.02 + 0.01,
+  }))
+  if (highScore > 0) {
+    // Show high score hint
+  }
+  loop()
+}
+
+function resize() {
+  W = canvas.width = window.innerWidth
+  H = canvas.height = window.innerHeight
+  GROUND_Y = H * GROUND_Y_RATIO
+}
+
+function reset() {
+  dino = new Dino()
+  obstacles = []
+  particles = []
+  score = 0
+  speed = BASE_SPEED
+  spawnTimer = 0
+  frame = 0
+  gameState = 'playing'
+  uiEl.style.display = 'none'
+}
+
+// --- 游戏循环 ---
+function loop() {
+  frame++
+  update()
+  draw()
+  requestAnimationFrame(loop)
+}
+
+function update() {
+  if (gameState === 'playing') {
+    // Speed up
+    speed = Math.min(MAX_SPEED, BASE_SPEED + Math.floor(score / 500))
+
+    // Dino
+    dino.update()
+
+    // Obstacle spawn
+    spawnTimer++
+    const interval = Math.max(40, 100 - speed * 3)
+    if (spawnTimer > interval) {
+      spawnTimer = 0
+      obstacles.push(new Obstacle())
+    }
+
+    // Update obstacles
+    obstacles = obstacles.filter(o => {
+      o.update()
+      if (!o.passed && o.x + o.w < dino.x) {
+        o.passed = true
+        score += 10
+      }
+      // Collision
+      if (checkCollision(dino, o)) {
+        gameOver()
+        return false
+      }
+      return o.x > -50
+    })
+
+    // Score
+    score++
+    scoreEl.textContent = Math.floor(score / 10)
+
+    // Particles update
+    particles = particles.filter(p => {
+      p.x += p.vx
+      p.y += p.vy
+      p.life--
+      p.vy += 0.05
+      return p.life > 0
+    })
+  }
+
+  // Clouds
+  clouds.forEach(c => c.update())
+
+  // Ground
+  groundOffset = (groundOffset + speed) % W
+}
+
+function draw() {
+  // 🎨 原画师: 背景绘制
+  const bg = ctx.createLinearGradient(0, 0, 0, H)
+  bg.addColorStop(0, COLORS.sky1)
+  bg.addColorStop(0.5, COLORS.sky2)
+  bg.addColorStop(1, '#0f0f23')
+  ctx.fillStyle = bg
+  ctx.fillRect(0, 0, W, H)
+
+  // Stars parallax
+  stars.forEach(s => {
+    ctx.fillStyle = COLORS.star
+    ctx.beginPath()
+    ctx.arc(
+      (s.x + groundOffset * s.speed) % W,
+      s.y, s.size, 0, Math.PI * 2
+    )
+    ctx.fill()
+  })
+
+  // Clouds
+  clouds.forEach(c => c.draw())
+
+  // Ground
+  ctx.fillStyle = COLORS.ground
+  ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y)
+  ctx.fillStyle = COLORS.groundLine
+  ctx.shadowColor = COLORS.groundLine
+  ctx.shadowBlur = 10
+
+  // Ground line animation
+  for (let x = -groundOffset % 40; x < W + 40; x += 40) {
+    ctx.fillRect(x, GROUND_Y, 20, 2)
+  }
+  ctx.shadowBlur = 0
+
+  // Grass details
+  ctx.fillStyle = COLORS.grass
+  for (let x = -groundOffset % 60; x < W + 60; x += 60) {
+    const h = Math.sin(x * 0.5) * 4 + 6
+    ctx.fillRect(x, GROUND_Y - h + 2, 2, h)
+    ctx.fillRect(x + 30, GROUND_Y - h/2 + 2, 2, h/2)
+  }
+
+  // Particles
+  particles.forEach(p => {
+    ctx.globalAlpha = p.life / p.maxLife
+    ctx.fillStyle = p.color
+    ctx.fillRect(p.x, p.y, p.size, p.size)
+  })
+  ctx.globalAlpha = 1
+
+  // Obstacles
+  obstacles.forEach(o => o.draw())
+
+  // Dino
+  if (gameState !== 'gameover') {
+    dino.draw()
+  }
+
+  // Score HUD
+  if (gameState === 'playing') {
+    ctx.fillStyle = 'rgba(255,255,255,.3)'
+    ctx.font = '14px "Courier New", monospace'
+    ctx.textAlign = 'right'
+    ctx.fillText(`スピード ${Math.floor(speed)}`, W - 20, 50)
+    if (highScore > 0) {
+      ctx.fillStyle = 'rgba(255,255,255,.2)'
+      ctx.fillText(`最高 🏆 ${highScore}`, W - 20, 68)
+    }
+  }
+
+  // Game over overlay
+  if (gameState === 'gameover') {
+    ctx.fillStyle = 'rgba(0,0,0,.6)'
+    ctx.fillRect(0, 0, W, H)
+    ctx.fillStyle = '#fff'
+    ctx.textAlign = 'center'
+    ctx.font = 'bold clamp(28px,5vw,48px) "Courier New", monospace'
+    ctx.fillText('💀 GAME OVER', W/2, H/2 - 60)
+    ctx.font = 'clamp(18px,3vw,28px) "Courier New", monospace'
+    ctx.fillStyle = '#6c5ce7'
+    ctx.fillText(`🏆 ${Math.floor(score / 10)}`, W/2, H/2)
+    ctx.font = 'clamp(14px,2vw,18px) "Courier New", monospace'
+    ctx.fillStyle = 'rgba(255,255,255,.6)'
+    ctx.fillText('点击 / 空格 重来', W/2, H/2 + 40)
+  }
+}
+
+function gameOver() {
+  gameState = 'gameover'
+  const finalScore = Math.floor(score / 10)
+  if (finalScore > highScore) {
+    highScore = finalScore
+    localStorage.setItem('dinoHigh', String(highScore))
+  }
+  // Death particle burst
+  for (let i = 0; i < 20; i++) {
+    particles.push({
+      x: dino.x + dino.w/2, y: dino.y + dino.h/2,
+      vx: (Math.random() - 0.5) * 10,
+      vy: (Math.random() - 0.5) * 10 - 3,
+      life: 30, maxLife: 30,
+      size: Math.random() * 4 + 2,
+      color: COLORS.particle,
+    })
+  }
+}
+
+// --- 输入处理 ---
+function handleInput(e) {
+  e.preventDefault()
+  if (gameState === 'menu') {
+    uiEl.style.display = 'none'
+    reset()
+    return
+  }
+  if (gameState === 'playing') {
+    dino.jump()
+    return
+  }
+  if (gameState === 'gameover') {
+    reset()
+  }
+}
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' || e.key === ' ') {
+    e.preventDefault()
+    handleInput(e)
+  }
+})
+
+// Touch / Click
+canvas.addEventListener('click', handleInput)
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault()
+  handleInput(e)
+})
+
+// Resize
+window.addEventListener('resize', resize)
+
+// --- 启动 ---
+window.addEventListener('load', () => {
+  // roundRect polyfill
+  if (!CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+      if (typeof r === 'number') r = [r]
+      const tl = r[0] || 0
+      this.moveTo(x + tl, y)
+      this.lineTo(x + w - tl, y)
+      this.quadraticCurveTo(x + w, y, x + w, y + tl)
+      this.lineTo(x + w, y + h - tl)
+      this.quadraticCurveTo(x + w, y + h, x + w - tl, y + h)
+      this.lineTo(x + tl, y + h)
+      this.quadraticCurveTo(x, y + h, x, y + h - tl)
+      this.lineTo(x, y + tl)
+      this.quadraticCurveTo(x, y, x + tl, y)
+      this.closePath()
+      return this
+    }
+  }
+  init()
+})
+</script>
+</body>
+</html>
