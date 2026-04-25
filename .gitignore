@@ -4,5 +4,16 @@ docs/task-summary*
 docs/*.md
 task-summary*.md
 
-# But keep docs/ for GitHub Pages
+# Keep docs/ for GitHub Pages
 !docs/
+
+# Backup / stale artifacts
+docs-bak/
+ai-game-studio-submission.zip
+finance-legion/ai-finance-legion-agent-pack.zip
+
+# Generated files (build.py produces these)
+finance-legion/index.html
+finance-legion/src/App.vue
+finance-legion/src/style.css
+finance-legion/src/main.js
