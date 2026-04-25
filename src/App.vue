@@ -11,10 +11,10 @@
           {{ lang === 'en' ? '🇨🇳 中' : '🇬🇧 EN' }}
         </button>
         <div class="nav">
-          <a href="#pipeline" class="active">{{ lang === 'en' ? 'Pipeline' : '流水线' }}</a>
-          <a href="#works">{{ lang === 'en' ? 'Works' : '作品' }}</a>
-          <a href="#about">{{ lang === 'en' ? 'About' : '关于' }}</a>
-          <a href="#cta">{{ lang === 'en' ? 'Reach Us' : '联系我们' }}</a>
+          <a href="#pipeline" :class="{ active: activeSection === 'pipeline' }">{{ lang === 'en' ? 'Pipeline' : '流水线' }}</a>
+          <a href="#works" :class="{ active: activeSection === 'works' }">{{ lang === 'en' ? 'Works' : '作品' }}</a>
+          <a href="#about" :class="{ active: activeSection === 'about' }">{{ lang === 'en' ? 'About' : '关于' }}</a>
+          <a href="#cta" :class="{ active: activeSection === 'cta' }">{{ lang === 'en' ? 'Reach Us' : '联系我们' }}</a>
           <a href="#cta" class="liquid-glass-btn nav-cta">{{ lang === 'en' ? 'Start Creating' : '开始创作' }}</a>
         </div>
       </nav>
@@ -55,10 +55,29 @@
           <div class="liquid-glass">
             <input
               v-model="ideaInput"
+              :disabled="isLoading"
               :placeholder="lang === 'en' ? 'e.g., a pixel-art platformer where you play as a magical cat...' : '例如：一个像素风平台跳跃游戏，扮演一只魔法猫...'"
               @keyup.enter="handleIdea"
             />
-            <button @click="handleIdea">{{ lang === 'en' ? 'Generate →' : '生成 →' }}</button>
+            <button @click="handleIdea" :disabled="isLoading">{{ isLoading ? '⌛...' : (lang === 'en' ? 'Generate →' : '生成 →') }}</button>
+          </div>
+          <div v-if="isLoading" class="hero-loading">
+            <div v-for="(step, si) in ['Game Designer', 'Pixel Artist', 'Game Architect', 'Game Coder', 'Game Tester', 'Game Publisher']" :key="step" class="loading-step" :class="{ active: si <= loadingStep, done: si < loadingStep }">
+              <span class="loading-dot" v-if="si < loadingStep">✓</span>
+              <span class="loading-dot pulse" v-else-if="si === loadingStep">●</span>
+              <span class="loading-dot" v-else>○</span>
+              <span>{{ lang === 'en' ? step : ['游戏策划官','像素美术师','游戏架构师','游戏工程师','游戏测试官','游戏发行官'][si] }}</span>
+              <span v-if="si < loadingStep" class="loading-status">{{ lang === 'en' ? 'done' : '完成' }}</span>
+              <span v-else-if="si === loadingStep" class="loading-status active">{{ lang === 'en' ? 'working...' : '工作中...' }}</span>
+            </div>
+          </div>
+          <div v-if="showSuccess" class="hero-success">
+            <p>{{ lang === 'en' ? '✨ Game created successfully! Try our demos:' : '✨ 游戏创作完成！试试我们的演示：' }}</p>
+            <div class="success-links">
+              <a v-for="work in realWorks" :key="work.title" :href="work.url" target="_blank" class="liquid-glass-btn success-game-btn" @click.prevent="openGame(work.url)">
+                {{ work.icon }} {{ work.title }}
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -79,6 +98,7 @@
             :key="agent.name"
             class="agent-card reveal"
             :style="{ transitionDelay: `${i * 0.08}s` }"
+            @click="toggleAgent(i)"
           >
             <span class="agent-step">{{ lang === 'en' ? 'STEP' : '步骤' }} {{ i + 1 }}</span>
             <div
@@ -90,6 +110,11 @@
               <div class="agent-desc">{{ lang === 'en' ? agent.desc : agent.cnDesc }}</div>
             </div>
             <span v-if="i < agents.length - 1" class="agent-arrow">→</span>
+            <div v-if="expandedAgent === i" class="agent-detail">
+              <p>{{ lang === 'en' ? agent.detail : agent.cnDetail }}</p>
+              <span class="agent-detail-tag">{{ lang === 'en' ? 'Input' : '输入' }}: {{ agent.input }}</span>
+              <span class="agent-detail-tag">{{ lang === 'en' ? 'Output' : '输出' }}: {{ agent.output }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -193,6 +218,11 @@
           <a href="https://easyclaw.link" target="_blank">EasyClaw</a>
         </div>
       </div>
+      <div class="container footer-skill">
+        <a :href="downloadUrl" class="liquid-glass-btn" download>
+          ⬇ {{ lang === 'en' ? 'Download Agent Pack' : '下载 Agent 工具包' }}
+        </a>
+      </div>
     </footer>
   </div>
 </template>
@@ -205,15 +235,21 @@ export default {
   data() {
     return {
       scrolled: false,
-      lang: 'en',
+      lang: localStorage.getItem('aiGameStudioLang') || 'en',
       ideaInput: '',
+      activeSection: 'hero',
+      expandedAgent: null,
+      isLoading: false,
+      showSuccess: false,
+      loadingStep: -1,
+      downloadUrl: `${BASE}/downloads/ai-game-studio-agent-pack-v1.zip`,
       agents: [
-        { name: 'Game Designer', cnName: '游戏策划官', icon: '🎮', desc: 'Defines mechanics, rules, and player experience from your prompt', cnDesc: '从你的提示词中定义玩法、规则和玩家体验', bg: 'rgba(168, 130, 255, 0.12)' },
-        { name: 'Pixel Artist', cnName: '像素美术师', icon: '🎨', desc: 'Creates all visual assets — sprites, backgrounds, UI elements', cnDesc: '创作所有视觉资源——精灵图、背景、UI 元素', bg: 'rgba(255, 130, 180, 0.12)' },
-        { name: 'Game Architect', cnName: '游戏架构师', icon: '🏗️', desc: 'Designs the code structure, state management, and game loop', cnDesc: '设计代码结构、状态管理和游戏循环', bg: 'rgba(130, 200, 255, 0.12)' },
-        { name: 'Game Coder', cnName: '游戏工程师', icon: '⚡', desc: 'Writes clean, performant game code — HTML, Canvas, CSS animations', cnDesc: '编写干净高性能的游戏代码——HTML, Canvas, CSS 动画', bg: 'rgba(100, 220, 180, 0.12)' },
-        { name: 'Game Tester', cnName: '游戏测试官', icon: '🔍', desc: 'Runs the game, finds bugs, suggests balance and polish tweaks', cnDesc: '运行游戏、发现 bug、建议平衡性和润色调整', bg: 'rgba(255, 200, 80, 0.12)' },
-        { name: 'Game Publisher', cnName: '游戏发行官', icon: '🚀', desc: 'Packages and deploys the final game — shareable, playable URL', cnDesc: '打包并部署最终游戏——生成可分享、可玩的 URL', bg: 'rgba(255, 130, 130, 0.12)' },
+        { name: 'Game Designer', cnName: '游戏策划官', icon: '🎮', desc: 'Defines mechanics, rules, and player experience from your prompt', cnDesc: '从你的提示词中定义玩法、规则和玩家体验', bg: 'rgba(168, 130, 255, 0.12)', detail: 'Analyzes your one-sentence idea, expands it into a full Game Design Document (GDD) including core mechanics, win/lose conditions, difficulty curve, control scheme, and target audience.', cnDetail: '分析你的一句话创意，扩展为完整游戏设计文档(GDD)，包括核心玩法、胜负条件、难度曲线、操作方案和目标受众。', input: 'Your game idea (1 sentence)', output: 'PRD / Game Design Document' },
+        { name: 'Pixel Artist', cnName: '像素美术师', icon: '🎨', desc: 'Creates all visual assets — sprites, backgrounds, UI elements', cnDesc: '创作所有视觉资源——精灵图、背景、UI 元素', bg: 'rgba(255, 130, 180, 0.12)', detail: 'Translates the GDD into visual specifications: color palette, sprite dimensions, UI mockups, animation frames, tilemap layout, and parallax layer composition.', cnDetail: '将游戏设计文档转化为视觉规范：配色方案、精灵尺寸、UI 原型、动画帧、瓦片地图布局和视差层构成。', input: 'Game Design Document', output: 'Visual Design Spec (color, sprites, tiles, UI)' },
+        { name: 'Game Architect', cnName: '游戏架构师', icon: '🏗️', desc: 'Designs the code structure, state management, and game loop', cnDesc: '设计代码结构、状态管理和游戏循环', bg: 'rgba(130, 200, 255, 0.12)', detail: 'Designs the software architecture: module decomposition, state machine, game loop structure, collision detection strategy, scoring system, and data flow between components.', cnDetail: '设计软件架构：模块拆分、状态机、游戏循环结构、碰撞检测策略、计分系统和组件间数据流。', input: 'GDD + Visual Spec', output: 'Technical Architecture Doc' },
+        { name: 'Game Coder', cnName: '游戏工程师', icon: '⚡', desc: 'Writes clean, performant game code — HTML, Canvas, CSS animations', cnDesc: '编写干净高性能的游戏代码——HTML, Canvas, CSS 动画', bg: 'rgba(100, 220, 180, 0.12)', detail: 'Writes production-ready game code in a single self-contained HTML file. Implements all mechanics, rendering, input handling, sound effects (Web Audio API), and performance optimization.', cnDetail: '编写可直接运行的单一 HTML 游戏文件。实现所有玩法、渲染、输入处理、音效（Web Audio API）和性能优化。', input: 'Architecture Doc + Visual Spec', output: 'index.html (playable game)' },
+        { name: 'Game Tester', cnName: '游戏测试官', icon: '🔍', desc: 'Runs the game, finds bugs, suggests balance and polish tweaks', cnDesc: '运行游戏、发现 bug、建议平衡性和润色调整', bg: 'rgba(255, 200, 80, 0.12)', detail: 'Loads and plays the game, performing systematic test cases: boundary conditions, input edge cases, collision edge cases, performance profiling, balance validation. Outputs a structured bug report with severity levels and fix recommendations.', cnDetail: '加载并试玩游戏，执行系统性测试用例：边界条件、输入边缘情况、碰撞边缘情况、性能分析和平衡性验证。输出结构化 Bug 报告，附带严重等级和修复建议。', input: 'index.html + Architecture Doc', output: 'Bug Report + Polish Suggestions' },
+        { name: 'Game Publisher', cnName: '游戏发行官', icon: '🚀', desc: 'Packages and deploys the final game — shareable, playable URL', cnDesc: '打包并部署最终游戏——生成可分享、可玩的 URL', bg: 'rgba(255, 130, 130, 0.12)', detail: 'Finalizes the game package: minifies code, generates metadata (thumbnail, title, description), creates the deployable artifact, and writes the entry to the game gallery JSON.', cnDetail: '完成游戏打包：代码压缩、生成元数据（缩略图、标题、描述）、创建可部署产物、将条目写入游戏画廊 JSON。', input: 'Final index.html + Bug Report', output: 'Deployed URL + games.json entry' },
       ],
       realWorks: [
         {
@@ -259,9 +295,22 @@ export default {
   methods: {
     toggleLang() {
       this.lang = this.lang === 'en' ? 'zh' : 'en'
+      localStorage.setItem('aiGameStudioLang', this.lang)
     },
     onScroll() {
       this.scrolled = window.scrollY > 60
+      // Update active nav section based on scroll position
+      const sections = ['pipeline', 'works', 'about', 'cta']
+      for (const id of sections) {
+        const el = document.getElementById(id)
+        if (el) {
+          const rect = el.getBoundingClientRect()
+          if (rect.top <= 200 && rect.bottom >= 200) {
+            this.activeSection = id
+            break
+          }
+        }
+      }
     },
     setupObserver() {
       const observer = new IntersectionObserver((entries) => {
@@ -272,10 +321,29 @@ export default {
         })
       }, { threshold: 0.1 })
       document.querySelectorAll('.reveal').forEach(el => observer.observe(el))
+
+      // IntersectionObserver for nav highlight
+      const navObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            this.activeSection = entry.target.id
+          }
+        })
+      }, { threshold: 0.3 })
+      document.querySelectorAll('section[id]').forEach(el => navObserver.observe(el))
+    },
+    toggleAgent(i) {
+      this.expandedAgent = this.expandedAgent === i ? null : i
     },
     scrollTo(sel) {
       const el = document.querySelector(sel)
       if (el) el.scrollIntoView({ behavior: 'smooth' })
+      // If scrolling to hero, focus the input
+      if (sel === '#hero') {
+        setTimeout(() => {
+          document.querySelector('.hero-input-area input')?.focus()
+        }, 500)
+      }
     },
     openGame(url) {
       window.open(url, '_blank')
@@ -283,12 +351,33 @@ export default {
     handleIdea() {
       const idea = this.ideaInput.trim()
       if (!idea) {
-        this.scrollTo('#cta')
+        this.showSuccess = false
+        this.ideaInput = ''
+        const msg = this.lang === 'en' ? 'Please enter an idea' : '请输入想法'
+        const input = document.querySelector('.hero-input-area input')
+        const orig = input?.placeholder
+        if (input) {
+          input.placeholder = msg
+          setTimeout(() => { if (input) input.placeholder = orig }, 1500)
+        }
         return
       }
-      this.ideaInput = this.lang === 'en' ? 'The multi-agent pipeline is being built for the hackathon...' : '多 Agent 流水线正在为黑客松构建中...'
-      setTimeout(() => { this.ideaInput = '' }, 2000)
-    }
+      this.isLoading = true
+      this.showSuccess = false
+      this.loadingStep = -1
+      const steps = ['Game Designer', 'Pixel Artist', 'Game Architect', 'Game Coder', 'Game Tester', 'Game Publisher']
+      const interval = setInterval(() => {
+        this.loadingStep++
+        if (this.loadingStep >= steps.length) {
+          clearInterval(interval)
+          setTimeout(() => {
+            this.isLoading = false
+            this.showSuccess = true
+            this.loadingStep = -1
+          }, 300)
+        }
+      }, 500)
+    },
   }
 }
 </script>
