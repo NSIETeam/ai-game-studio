@@ -59,6 +59,7 @@
           </button>
         </div>
         <div class="hero-input-area animate-fade-rise-delay-3">
+          <p style="margin-bottom:8px;font-size:11px;color:rgba(255,255,255,0.2);text-align:center;">{{ lang === 'en' ? '✨ Try typing an idea — backend integration coming soon' : '✨ 输入创意试试——后端接入即将上线，当前为演示预览' }}</p>
           <div class="liquid-glass">
             <input
               v-model="ideaInput"
@@ -78,7 +79,8 @@
               <span v-else-if="si === loadingStep" class="loading-status active">{{ lang === 'en' ? 'working...' : '工作中...' }}</span>
             </div>
           </div>
-          <div v-if="showSuccess" class="hero-success">
+          <p style="margin-top:8px;font-size:11px;color:rgba(255,255,255,0.2);text-align:center;">{{ lang === 'en' ? '🚧 Under continuous improvement — backend integration coming soon' : '🚧 本网站在持续优化中 — 后端接入即将上线' }}</p>
+        <div v-if="showSuccess" class="hero-success">
             <p>{{ lang === 'en' ? '✨ Game created successfully! Try our demos:' : '✨ 游戏创作完成！试试我们的演示：' }}</p>
             <div class="success-links">
               <a v-for="work in realWorks" :key="work.title" :href="work.url" target="_blank" class="liquid-glass-btn success-game-btn" @click.prevent="openGame(work.url)">
@@ -211,6 +213,9 @@
         <button class="liquid-glass-btn" @click="scrollTo('#hero')">
           {{ lang === 'en' ? 'Start Creating Now →' : '开始创作 →' }}
         </button>
+        <p style="margin-top:20px;font-size:12px;color:rgba(255,255,255,0.25);">
+          {{ lang === 'en' ? '🚧 This site is under continuous improvement' : '🚧 本网站在持续优化中' }}
+        </p>
         <div style="margin-top:16px;font-size:13px;color:var(--muted)">
           {{ lang === 'en' ? 'Or try our' : '或体验' }}
           <a href="https://nsieteam.github.io/ai-finance-legion/" style="color:var(--green);text-decoration:underline" target="_blank">
@@ -230,6 +235,7 @@
         <div class="footer-links">
           <a href="https://github.com/NSIETeam/ai-game-studio" target="_blank">GitHub</a>
           <a href="https://easyclaw.link" target="_blank">EasyClaw</a>
+          <span style="font-size:11px;color:rgba(255,255,255,0.2);">🚧 {{ lang === 'en' ? 'Continuously improving' : '持续优化中' }}</span>
         </div>
       </div>
       <div class="container footer-skill">

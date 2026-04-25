@@ -344,18 +344,18 @@ function draw() {
 document.addEventListener('keydown',e=>{
   keys[e.key]=true
   if(e.key===' '||e.code==='Space'){e.preventDefault()
-    if(gameState!=='playing')reset()}
+    if(gameState!=='playing'){reset();firing=true}}
 })
 document.addEventListener('keyup',e=>{keys[e.key]=false})
 canvas.addEventListener('mousemove',e=>{
   const r=canvas.getBoundingClientRect()
   mouseX=e.clientX-r.left;mouseY=e.clientY-r.top
 })
-canvas.addEventListener('mousedown',e=>{firing=true;if(gameState!=='playing')reset()})
+canvas.addEventListener('mousedown',e=>{if(gameState!=='playing'){reset();setTimeout(()=>firing=true,50)}else firing=true})
 canvas.addEventListener('mouseup',()=>{firing=false})
 canvas.addEventListener('mouseleave',()=>{firing=false})
-canvas.addEventListener('touchstart',e=>{e.preventDefault();if(gameState!=='playing')reset()
-  firing=true;const t=e.touches[0],r=canvas.getBoundingClientRect()
+canvas.addEventListener('touchstart',e=>{e.preventDefault();if(gameState!=='playing'){reset();setTimeout(()=>firing=true,50)}else firing=true
+  const t=e.touches[0],r=canvas.getBoundingClientRect()
   mouseX=t.clientX-r.left;mouseY=t.clientY-r.top})
 canvas.addEventListener('touchmove',e=>{e.preventDefault()
   const t=e.touches[0],r=canvas.getBoundingClientRect()
