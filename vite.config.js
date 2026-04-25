@@ -5,6 +5,6 @@ export default defineConfig({
   plugins: [vue()],
   base: '/ai-game-studio/',
   build: {
-    outDir: 'docs', // GitHub Pages uses docs/ or root
+    outDir: 'docs',
   },
 })
