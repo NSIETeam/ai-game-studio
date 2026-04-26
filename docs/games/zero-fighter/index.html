@@ -6,293 +6,382 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{overflow:hidden;background:#000;color:#fff;font-family:sans-serif;user-select:none}
-canvas{display:block;width:100vw;height:100vh}
+canvas{display:block}
 #ui{position:fixed;inset:0;pointer-events:none;z-index:10}
-#hud{position:absolute;top:20px;left:20px;font:13px monospace}
-#hud .r{margin:3px 0}
-#hud .l{color:#666}
+#hud{position:absolute;top:20px;left:20px;font:14px monospace;text-shadow:0 0 10px rgba(0,0,0,.8)}
+#hud .r{margin:4px 0}
+#hud .l{color:#888}
 #hud .v{color:#8f8}
-#hud .w{color:#f88}
 #crosshair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px}
-#crosshair::before,#crosshair::after{content:'';position:absolute;background:rgba(255,255,255,.4)}
-#crosshair::before{width:1px;height:100%;left:50%}
-#crosshair::after{width:100%;height:1px;top:50%}
-#menu{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.95);z-index:100;pointer-events:all}
-#menu h1{font-size:48px;color:#fff;font-weight:200;letter-spacing:12px;margin-bottom:10px}
-#menu .sub{color:#666;font-size:12px;margin-bottom:30px;letter-spacing:4px}
-.btn{background:transparent;border:1px solid #444;color:#aaa;padding:10px 48px;margin:6px;font:15px sans-serif;cursor:pointer;letter-spacing:3px;transition:.2s}
-.btn:hover{border-color:#fff;color:#fff;background:rgba(255,255,255,.04)}
-#toast{position:absolute;top:30%;left:50%;transform:translateX(-50%);color:#fff;font-size:24px;text-shadow:0 0 20px rgba(255,255,255,.5);opacity:0;transition:.3s}
-#gameover{display:none;position:fixed;inset:0;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.9);z-index:110;pointer-events:all}
-#gameover h2{font-size:36px;color:#f88;margin-bottom:20px}
-#gameover .stat{color:#aaa;margin:5px}
+#crosshair::before,#crosshair::after{content:'';position:absolute;background:rgba(255,255,255,.5)}
+#crosshair::before{width:2px;height:100%;left:50%;margin-left:-1px}
+#crosshair::after{width:100%;height:2px;top:50%;margin-top:-1px}
+#menu{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(180deg,rgba(0,10,30,.98),rgba(0,0,0,.98));z-index:100}
+#menu h1{font-size:56px;color:#fff;font-weight:200;letter-spacing:16px;margin-bottom:8px;text-shadow:0 0 60px rgba(100,150,255,.3)}
+#menu .sub{color:#556;font-size:13px;margin-bottom:40px;letter-spacing:6px}
+.btn{background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.15);color:#ccc;padding:14px 56px;margin:8px;font:16px sans-serif;cursor:pointer;letter-spacing:4px;border-radius:8px;transition:.2s}
+.btn:hover{border-color:rgba(255,255,255,.4);color:#fff;background:rgba(255,255,255,.1);transform:translateY(-2px)}
+#toast{position:absolute;top:25%;left:50%;transform:translateX(-50%);color:#fff;font-size:32px;font-weight:700;text-shadow:0 0 30px rgba(255,200,100,.8);opacity:0;transition:.3s}
+#gameover{display:none;position:fixed;inset:0;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.95);z-index:110}
+#gameover h2{font-size:42px;margin-bottom:24px;text-shadow:0 0 40px currentColor}
+#gameover .stat{color:#aaa;margin:6px;font-size:16px}
+#gameover .stat span{color:#fff}
+.ctrl{color:#445;font-size:11px;margin-top:20px;letter-spacing:2px}
 </style>
 </head>
 <body>
 <div id="menu">
   <h1>零&emsp;式</h1>
   <div class="sub">⚡ 3D DOGFIGHTER ⚡</div>
-  <button class="btn" onclick="startGame()">开始游戏</button>
-  <div class="sub" style="margin-top:20px">W/S 俯仰 · A/D 滚转 · 空格 射击</div>
+  <button class="btn" onclick="startGame()">开 始 游 戏</button>
+  <div class="ctrl">W/S 俯仰 · A/D 滚转 · 鼠标 瞄准 · 空格 射击</div>
 </div>
 
 <div id="gameover">
-  <h2>任务完成!</h2>
-  <div class="stat">击落敌机：<span id="finalKills">0</span></div>
-  <button class="btn" onclick="location.reload()" style="margin-top:20px">再来一局</button>
+  <h2 id="resultTitle">任务完成!</h2>
+  <div class="stat">击落敌机：<span id="finalKills">0</span> / 10</div>
+  <button class="btn" onclick="location.reload()">再 来 一 局</button>
 </div>
 
 <div id="ui" style="display:none">
   <div id="hud">
     <div class="r"><span class="l">HP </span><span class="v" id="hpV">100</span></div>
-    <div class="r"><span class="l">SPD </span><span class="v" id="spdV">0</span></div>
-    <div class="r"><span class="l">KILLS </span><span class="v" id="killV">0/10</span></div>
+    <div class="r"><span class="l">SPEED </span><span class="v" id="spdV">0</span></div>
+    <div class="r"><span class="l">KILLS </span><span class="v" id="killV">0 / 10</span></div>
   </div>
   <div id="crosshair"></div>
-  <div id="toast">KILL!</div>
+  <div id="toast"></div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-// ========== 游戏状态 ==========
-let scene, camera, renderer, player;
-let enemies = [], bullets = [], explosions = [];
-let keys = {}, mouseX = 0, mouseY = 0;
-let gameRunning = false, hp = 100, kills = 0, enemySpawnTimer = 0;
-const TOTAL_ENEMIES = 10;
+// ========== 游戏配置 ==========
+const CONFIG = {
+  TOTAL_ENEMIES: 10,
+  PLAYER_SPEED: 25,
+  BULLET_SPEED: 100,
+  ENEMY_SPEED: 18,
+  SPAWN_INTERVAL: 2.5
+};
 
-// ========== 初始化 ==========
-function init() {
+// ========== 游戏状态 ==========
+let scene, camera, renderer;
+let player, playerVelocity;
+let enemies = [], bullets = [], particles = [];
+let keys = {}, mouse = {x: 0, y: 0};
+let gameRunning = false, hp = 100, kills = 0, spawnTimer = 0;
+let lastTime = 0;
+
+// ========== 初始化场景 ==========
+function initScene() {
+  // 场景
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x000810);
-  scene.fog = new THREE.Fog(0x000810, 50, 150);
+  scene.background = new THREE.Color(0x000812);
+  scene.fog = new THREE.Fog(0x000812, 30, 120);
   
-  camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 300);
+  // 相机
+  camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 500);
   
-  renderer = new THREE.WebGLRenderer({antialias:true});
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+  // 渲染器
+  renderer = new THREE.WebGLRenderer({antialias: true});
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   document.body.insertBefore(renderer.domElement, document.body.firstChild);
   
   // 灯光
-  scene.add(new THREE.AmbientLight(0x334455, 0.5));
-  const sun = new THREE.DirectionalLight(0xffffff, 0.8);
-  sun.position.set(30, 40, 20);
+  scene.add(new THREE.AmbientLight(0x336699, 0.4));
+  const sun = new THREE.DirectionalLight(0xffffff, 1);
+  sun.position.set(50, 100, 50);
   scene.add(sun);
+  scene.add(new THREE.HemisphereLight(0x4488ff, 0x002244, 0.3));
   
   // 星空
-  const stars = new THREE.BufferGeometry();
-  const starPos = new Float32Array(1000*3);
-  for(let i=0;i<1000;i++){
-    starPos[i*3]=(Math.random()-0.5)*200;
-    starPos[i*3+1]=(Math.random()-0.5)*200;
-    starPos[i*3+2]=(Math.random()-0.5)*200-50;
-  }
-  stars.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-  scene.add(new THREE.Points(stars, new THREE.PointsMaterial({color:0xffffff,size:0.3})));
+  createStars();
   
   // 海洋
-  const ocean = new THREE.Mesh(
-    new THREE.PlaneGeometry(500, 500, 50, 50),
-    new THREE.MeshStandardMaterial({color:0x001133,roughness:0.2,metalness:0.8,flatShading:true})
-  );
-  ocean.rotation.x = -Math.PI/2;
-  ocean.position.y = -10;
-  scene.add(ocean);
+  createOcean();
   
   // 玩家
-  player = createPlayer();
+  player = createPlane(0xcc9955);
+  player.position.set(0, 0, 0);
   scene.add(player);
   
-  // 事件
+  // 初始化相机位置
+  camera.position.set(0, 5, 15);
+  camera.lookAt(0, 0, -10);
+  
+  // 事件监听
   window.addEventListener('resize', onResize);
-  document.addEventListener('keydown', e => keys[e.key]=true);
-  document.addEventListener('keyup', e => keys[e.key]=false);
+  document.addEventListener('keydown', e => { keys[e.code] = true; e.preventDefault(); });
+  document.addEventListener('keyup', e => keys[e.code] = false);
   document.addEventListener('mousemove', e => {
-    mouseX = (e.clientX/window.innerWidth - 0.5) * 2;
-    mouseY = -(e.clientY/window.innerHeight - 0.5) * 2;
+    mouse.x = (e.clientX / innerWidth - 0.5) * 2;
+    mouse.y = -(e.clientY / innerHeight - 0.5) * 2;
   });
   
   onResize();
-  animate();
 }
 
-// ========== 创建玩家飞机 ==========
-function createPlayer() {
-  const g = new THREE.Group();
-  const mat = new THREE.MeshStandardMaterial({color:0xbb8855,roughness:0.5,metalness:0.3,flatShading:true});
+// ========== 创建星空 ==========
+function createStars() {
+  const geo = new THREE.BufferGeometry();
+  const positions = new Float32Array(2000 * 3);
+  for (let i = 0; i < 2000; i++) {
+    positions[i*3] = (Math.random() - 0.5) * 400;
+    positions[i*3+1] = Math.random() * 150 + 20;
+    positions[i*3+2] = (Math.random() - 0.5) * 400;
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const mat = new THREE.PointsMaterial({color: 0xffffff, size: 0.5, transparent: true, opacity: 0.8});
+  scene.add(new THREE.Points(geo, mat));
+}
+
+// ========== 创建海洋 ==========
+function createOcean() {
+  const geo = new THREE.PlaneGeometry(500, 500, 32, 32);
+  const mat = new THREE.MeshStandardMaterial({
+    color: 0x001830,
+    roughness: 0.3,
+    metalness: 0.8,
+    flatShading: true
+  });
+  const ocean = new THREE.Mesh(geo, mat);
+  ocean.rotation.x = -Math.PI / 2;
+  ocean.position.y = -15;
+  scene.add(ocean);
+  
+  // 海洋网格线
+  const wireGeo = new THREE.PlaneGeometry(500, 500, 20, 20);
+  const wireMat = new THREE.MeshBasicMaterial({color: 0x003366, wireframe: true, transparent: true, opacity: 0.1});
+  const wire = new THREE.Mesh(wireGeo, wireMat);
+  wire.rotation.x = -Math.PI / 2;
+  wire.position.y = -14.9;
+  scene.add(wire);
+}
+
+// ========== 创建飞机 ==========
+function createPlane(color) {
+  const group = new THREE.Group();
+  const mat = new THREE.MeshStandardMaterial({color, roughness: 0.6, metalness: 0.4, flatShading: true});
   
   // 机身
-  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.5,1.8,8,1), mat);
-  body.rotation.x = Math.PI/2;
-  body.position.z = -0.35;
-  g.add(body);
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.6, 2.2, 8), mat);
+  body.rotation.x = Math.PI / 2;
+  body.position.z = -0.4;
+  group.add(body);
+  
+  // 机头
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.4, 0.6, 8), mat);
+  nose.rotation.x = -Math.PI / 2;
+  nose.position.z = 0.9;
+  group.add(nose);
   
   // 机翼
-  const wing = new THREE.Mesh(new THREE.BoxGeometry(2.0,0.02,0.2), mat);
-  wing.position.z = 0.1;
-  wing.rotation.x = -0.08;
-  g.add(wing);
+  const wingGeo = new THREE.BoxGeometry(4, 0.05, 0.5);
+  const wing = new THREE.Mesh(wingGeo, mat);
+  wing.position.set(0, 0, 0);
+  group.add(wing);
   
   // 尾翼
-  const tail = new THREE.Mesh(new THREE.BoxGeometry(1.0,0.02,0.2), mat);
-  tail.position.z = -1.1;
-  g.add(tail);
+  const tailH = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.04, 0.3), mat);
+  tailH.position.set(0, 0.05, -1.4);
+  group.add(tailH);
+  
+  const tailV = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.6, 0.4), mat);
+  tailV.position.set(0, 0.3, -1.4);
+  group.add(tailV);
   
   // 螺旋桨
-  const prop = new THREE.Group();
-  for(let i=0;i<3;i++){
-    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.03,0.3,0.01), new THREE.MeshStandardMaterial({color:0x333}));
-    blade.position.z = 0.8;
-    blade.rotation.z = (i/3)*Math.PI*2;
-    prop.add(blade);
+  const propGroup = new THREE.Group();
+  propGroup.position.z = 1.1;
+  const bladeMat = new THREE.MeshStandardMaterial({color: 0x333333, flatShading: true});
+  for (let i = 0; i < 3; i++) {
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.5, 0.02), bladeMat);
+    blade.rotation.z = (i / 3) * Math.PI * 2;
+    propGroup.add(blade);
   }
-  g.add(prop);
-  g.userData.prop = prop;
+  group.add(propGroup);
+  group.userData.propeller = propGroup;
   
-  // 线框
-  const wire = new THREE.LineSegments(
+  // 线框轮廓
+  const wireframe = new THREE.LineSegments(
     new THREE.EdgesGeometry(body.geometry),
-    new THREE.LineBasicMaterial({color:0xccaaff,transparent:true,opacity:0.3})
+    new THREE.LineBasicMaterial({color: 0x8866ff, transparent: true, opacity: 0.35})
   );
-  wire.rotation.x = Math.PI/2;
-  wire.position.z = -0.35;
-  g.add(wire);
+  wireframe.rotation.x = Math.PI / 2;
+  wireframe.position.z = -0.4;
+  group.add(wireframe);
   
-  g.position.set(0, 0, 10);
-  g.userData = {speed: 0, pitch: 0, roll: 0, yaw: 0, fireTimer: 0};
-  return g;
+  return group;
 }
 
 // ========== 创建敌机 ==========
 function spawnEnemy() {
-  const e = createPlayer();
-  e.userData = {
-    speed: 15 + Math.random() * 5,
-    hp: 2,
-    dir: new THREE.Vector3(0, 0, -1),
-    wobble: Math.random() * Math.PI * 2
-  };
-  e.position.set(
-    (Math.random() - 0.5) * 60,
-    Math.random() * 20 - 5,
-    -50 - Math.random() * 30
+  const enemy = createPlane(0x993333);
+  
+  // 在玩家前方随机位置生成
+  const angle = (Math.random() - 0.5) * Math.PI;
+  const dist = 40 + Math.random() * 30;
+  enemy.position.set(
+    player.position.x + Math.sin(angle) * dist,
+    player.position.y + (Math.random() - 0.5) * 20,
+    player.position.z - dist
   );
-  e.traverse(c => {
-    if(c.material && c.material.color) c.material.color.setHex(0x884444);
-  });
-  scene.add(e);
-  enemies.push(e);
+  enemy.lookAt(player.position);
+  
+  enemy.userData = {
+    hp: 2,
+    speed: CONFIG.ENEMY_SPEED + Math.random() * 5,
+    phase: Math.random() * Math.PI * 2
+  };
+  
+  scene.add(enemy);
+  enemies.push(enemy);
 }
 
 // ========== 创建子弹 ==========
-function shoot() {
-  const b = new THREE.Mesh(
-    new THREE.SphereGeometry(0.08, 4, 4),
-    new THREE.MeshStandardMaterial({color:0xffcc44,emissive:0xff8800,emissiveIntensity:2})
+function fireBullet() {
+  const bullet = new THREE.Mesh(
+    new THREE.SphereGeometry(0.1, 6, 6),
+    new THREE.MeshStandardMaterial({color: 0xffcc00, emissive: 0xff8800, emissiveIntensity: 3})
   );
-  b.position.copy(player.position);
-  b.position.z -= 1;
-  b.userData = {speed: 80, life: 2};
-  scene.add(b);
-  bullets.push(b);
+  
+  // 从飞机前方发射
+  const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(player.quaternion);
+  bullet.position.copy(player.position).add(forward.clone().multiplyScalar(1.5));
+  bullet.userData = {
+    velocity: forward.multiplyScalar(CONFIG.BULLET_SPEED),
+    life: 3
+  };
+  
+  scene.add(bullet);
+  bullets.push(bullet);
 }
 
-// ========== 爆炸特效 ==========
-function explode(pos, color, count) {
-  for(let i=0;i<count;i++){
-    const p = new THREE.Mesh(
-      new THREE.BoxGeometry(0.1+Math.random()*0.2, 0.1+Math.random()*0.2, 0.1+Math.random()*0.2),
-      new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:2,transparent:true,opacity:1})
+// ========== 创建爆炸 ==========
+function createExplosion(pos, color, count) {
+  for (let i = 0; i < count; i++) {
+    const size = 0.1 + Math.random() * 0.25;
+    const particle = new THREE.Mesh(
+      new THREE.BoxGeometry(size, size, size),
+      new THREE.MeshStandardMaterial({color, emissive: color, emissiveIntensity: 2, transparent: true})
     );
-    p.position.copy(pos);
-    p.position.x += (Math.random()-0.5)*0.5;
-    p.position.y += (Math.random()-0.5)*0.5;
-    p.position.z += (Math.random()-0.5)*0.5;
-    p.userData = {vel: new THREE.Vector3((Math.random()-0.5)*10, (Math.random()-0.5)*10, (Math.random()-0.5)*10), life: 0.5+Math.random()*0.5};
-    scene.add(p);
-    explosions.push(p);
+    particle.position.copy(pos);
+    particle.userData = {
+      velocity: new THREE.Vector3(
+        (Math.random() - 0.5) * 15,
+        (Math.random() - 0.5) * 15,
+        (Math.random() - 0.5) * 15
+      ),
+      life: 0.5 + Math.random() * 0.5
+    };
+    scene.add(particle);
+    particles.push(particle);
   }
 }
 
 // ========== 更新玩家 ==========
 function updatePlayer(dt) {
-  const pd = player.userData;
+  // 俯仰控制
+  let pitchInput = 0;
+  if (keys['KeyW'] || keys['ArrowUp']) pitchInput = 1;
+  else if (keys['KeyS'] || keys['ArrowDown']) pitchInput = -1;
   
-  // 速度
-  pd.speed += (20 - pd.speed) * dt * 0.5;
+  // 滚转控制
+  let rollInput = 0;
+  if (keys['KeyA'] || keys['ArrowLeft']) rollInput = 1;
+  else if (keys['KeyD'] || keys['ArrowRight']) rollInput = -1;
   
-  // 控制
-  if(keys['w']||keys['W']) pd.pitch = Math.min(pd.pitch + dt*3, 1);
-  else if(keys['s']||keys['S']) pd.pitch = Math.max(pd.pitch - dt*3, -1);
-  else pd.pitch *= 0.9;
+  // 应用旋转（增量式）
+  const pitchAxis = new THREE.Vector3(1, 0, 0);
+  const yawAxis = new THREE.Vector3(0, 1, 0);
+  const rollAxis = new THREE.Vector3(0, 0, 1);
   
-  if(keys['a']||keys['A']) pd.roll += dt*4;
-  if(keys['d']||keys['D']) pd.roll -= dt*4;
-  pd.roll *= 0.95;
+  // 俯仰
+  const pitchQuat = new THREE.Quaternion().setFromAxisAngle(pitchAxis, (pitchInput * 2 + mouse.y * 1.5) * dt);
+  player.quaternion.multiply(pitchQuat);
   
-  pd.yaw += (mouseX * 0.7 + pd.roll * 0.3) * dt;
-  pd.yaw *= 0.9;
+  // 偏航（鼠标 + 滚转耦合）
+  const yawQuat = new THREE.Quaternion().setFromAxisAngle(yawAxis, (-mouse.x * 2 - rollInput * 0.8) * dt);
+  player.quaternion.premultiply(yawQuat);
   
-  // 应用旋转
-  const euler = new THREE.Euler(pd.pitch*0.8 + mouseY*0.4, pd.yaw*0.5, pd.roll*0.35, 'YXZ');
-  player.quaternion.setFromEuler(euler);
+  // 滚转
+  const rollQuat = new THREE.Quaternion().setFromAxisAngle(rollAxis, rollInput * 3 * dt);
+  player.quaternion.multiply(rollQuat);
+  
+  player.quaternion.normalize();
   
   // 前进
-  const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(player.quaternion);
-  player.position.add(fwd.clone().multiplyScalar(pd.speed * dt));
+  const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(player.quaternion);
+  player.position.add(forward.multiplyScalar(CONFIG.PLAYER_SPEED * dt));
   
-  // 限制飞机不要飞太远
-  player.position.z = Math.max(player.position.z, -200);
-  
-  // 螺旋桨
-  if(player.userData.prop) player.userData.prop.rotation.z += dt * pd.speed * 20;
-  
-  // 射击
-  pd.fireTimer -= dt;
-  if(keys[' '] && pd.fireTimer <= 0) {
-    pd.fireTimer = 0.15;
-    shoot();
+  // 螺旋桨动画
+  if (player.userData.propeller) {
+    player.userData.propeller.rotation.z += dt * 50;
   }
   
-  // 相机跟随 - 计算理想位置（飞机后方上方）
-  const idealOffset = new THREE.Vector3(0, 4, 10);
-  idealOffset.applyQuaternion(player.quaternion);
-  idealOffset.add(player.position);
+  // 射击
+  if (keys['Space']) {
+    if (!player.userData.lastFire || Date.now() - player.userData.lastFire > 120) {
+      fireBullet();
+      player.userData.lastFire = Date.now();
+    }
+  }
+}
+
+// ========== 更新相机 ==========
+function updateCamera(dt) {
+  // 计算理想相机位置：飞机后上方
+  const offset = new THREE.Vector3(0, 3, 12);
+  offset.applyQuaternion(player.quaternion);
+  const idealPos = player.position.clone().add(offset);
   
-  const lookAtPos = new THREE.Vector3(0, 0, -20);
-  lookAtPos.applyQuaternion(player.quaternion);
-  lookAtPos.add(player.position);
+  // 平滑跟随
+  camera.position.lerp(idealPos, 1 - Math.pow(0.001, dt));
   
-  camera.position.lerp(idealOffset, dt * 3);
-  camera.lookAt(lookAtPos);
-  
-  // HUD
-  document.getElementById('spdV').textContent = Math.round(pd.speed);
-  document.getElementById('hpV').textContent = Math.max(0, Math.round(hp));
-  document.getElementById('killV').textContent = kills + '/' + TOTAL_ENEMIES;
-  
-  if(hp <= 0) gameOver(false);
+  // 看向飞机前方
+  const lookTarget = new THREE.Vector3(0, 0, -30);
+  lookTarget.applyQuaternion(player.quaternion);
+  lookTarget.add(player.position);
+  camera.lookAt(lookTarget);
 }
 
 // ========== 更新敌机 ==========
 function updateEnemies(dt) {
-  for(let i=enemies.length-1; i>=0; i--){
-    const e = enemies[i];
-    const ud = e.userData;
+  for (let i = enemies.length - 1; i >= 0; i--) {
+    const enemy = enemies[i];
+    const ud = enemy.userData;
     
     // 追踪玩家
-    const dir = new THREE.Vector3().subVectors(player.position, e.position).normalize();
-    e.quaternion.slerp(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,-1), dir), dt * 0.5);
-    e.position.add(new THREE.Vector3(0, 0, -1).applyQuaternion(e.quaternion).multiplyScalar(ud.speed * dt));
+    const toPlayer = new THREE.Vector3().subVectors(player.position, enemy.position);
+    const dist = toPlayer.length();
+    toPlayer.normalize();
+    
+    // 计算目标朝向
+    const targetQuat = new THREE.Quaternion();
+    const up = new THREE.Vector3(0, 1, 0);
+    const mat = new THREE.Matrix4().lookAt(enemy.position, player.position, up);
+    targetQuat.setFromRotationMatrix(mat);
+    
+    // 平滑转向
+    enemy.quaternion.slerp(targetQuat, dt * 1.5);
+    
+    // 前进
+    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(enemy.quaternion);
+    enemy.position.add(forward.multiplyScalar(ud.speed * dt));
     
     // 波动
-    ud.wobble += dt;
-    e.position.y += Math.sin(ud.wobble) * dt * 0.3;
+    ud.phase += dt * 2;
+    enemy.position.y += Math.sin(ud.phase) * dt * 0.5;
     
-    // 清理过远
-    if(e.position.distanceTo(player.position) > 100) {
-      scene.remove(e);
+    // 螺旋桨
+    if (enemy.userData.propeller) {
+      enemy.userData.propeller.rotation.z += dt * 40;
+    }
+    
+    // 移除太远的敌机
+    if (dist > 150) {
+      scene.remove(enemy);
       enemies.splice(i, 1);
     }
   }
@@ -300,31 +389,45 @@ function updateEnemies(dt) {
 
 // ========== 更新子弹 ==========
 function updateBullets(dt) {
-  for(let i=bullets.length-1; i>=0; i--){
-    const b = bullets[i];
-    b.userData.life -= dt;
-    if(b.userData.life <= 0) {
-      scene.remove(b);
+  for (let i = bullets.length - 1; i >= 0; i--) {
+    const bullet = bullets[i];
+    const ud = bullet.userData;
+    
+    // 移动
+    bullet.position.add(ud.velocity.clone().multiplyScalar(dt));
+    ud.life -= dt;
+    
+    // 超时移除
+    if (ud.life <= 0) {
+      scene.remove(bullet);
       bullets.splice(i, 1);
       continue;
     }
-    b.position.z -= b.userData.speed * dt;
     
-    // 击中检测
-    for(let j=enemies.length-1; j>=0; j--){
-      const e = enemies[j];
-      if(b.position.distanceTo(e.position) < 2) {
-        e.userData.hp--;
-        explode(b.position, 0xffaa44, 5);
-        if(e.userData.hp <= 0) {
+    // 碰撞检测
+    for (let j = enemies.length - 1; j >= 0; j--) {
+      const enemy = enemies[j];
+      if (bullet.position.distanceTo(enemy.position) < 2.5) {
+        // 命中
+        createExplosion(bullet.position, 0xffaa44, 8);
+        enemy.userData.hp--;
+        
+        if (enemy.userData.hp <= 0) {
+          // 击毁
           kills++;
-          explode(e.position, 0xff6600, 20);
+          createExplosion(enemy.position, 0xff6600, 25);
+          createExplosion(enemy.position, 0xffcc00, 15);
           showToast('KILL!');
-          scene.remove(e);
+          scene.remove(enemy);
           enemies.splice(j, 1);
-          if(kills >= TOTAL_ENEMIES) gameOver(true);
+          
+          if (kills >= CONFIG.TOTAL_ENEMIES) {
+            gameOver(true);
+            return;
+          }
         }
-        scene.remove(b);
+        
+        scene.remove(bullet);
         bullets.splice(i, 1);
         break;
       }
@@ -332,46 +435,63 @@ function updateBullets(dt) {
   }
 }
 
-// ========== 更新爆炸 ==========
-function updateExplosions(dt) {
-  for(let i=explosions.length-1; i>=0; i--){
-    const p = explosions[i];
-    p.userData.life -= dt;
-    if(p.userData.life <= 0) {
+// ========== 更新粒子 ==========
+function updateParticles(dt) {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    const ud = p.userData;
+    
+    ud.life -= dt;
+    if (ud.life <= 0) {
       scene.remove(p);
-      explosions.splice(i, 1);
+      particles.splice(i, 1);
       continue;
     }
-    p.position.add(p.userData.vel.clone().multiplyScalar(dt));
-    p.userData.vel.y -= dt * 5;
-    p.material.opacity = p.userData.life;
-    p.rotation.x += dt * 5;
-    p.rotation.y += dt * 3;
+    
+    p.position.add(ud.velocity.clone().multiplyScalar(dt));
+    ud.velocity.y -= dt * 10;
+    p.material.opacity = ud.life * 2;
+    p.rotation.x += dt * 8;
+    p.rotation.y += dt * 6;
   }
 }
 
-// ========== 生成敌机 ==========
+// ========== 敌机生成 ==========
 function updateSpawning(dt) {
-  if(enemies.length + kills < TOTAL_ENEMIES) {
-    enemySpawnTimer -= dt;
-    if(enemySpawnTimer <= 0) {
-      enemySpawnTimer = 3;
+  if (enemies.length + kills < CONFIG.TOTAL_ENEMIES) {
+    spawnTimer -= dt;
+    if (spawnTimer <= 0) {
+      spawnTimer = CONFIG.SPAWN_INTERVAL;
       spawnEnemy();
     }
   }
 }
 
-// ========== 动画循环 ==========
-function animate() {
-  requestAnimationFrame(animate);
+// ========== 更新 HUD ==========
+function updateHUD() {
+  document.getElementById('hpV').textContent = Math.max(0, hp);
+  document.getElementById('spdV').textContent = CONFIG.PLAYER_SPEED;
+  document.getElementById('killV').textContent = `${kills} / ${CONFIG.TOTAL_ENEMIES}`;
   
-  if(gameRunning) {
-    const dt = 1/60;
+  const hpEl = document.getElementById('hpV');
+  hpEl.style.color = hp > 60 ? '#8f8' : hp > 30 ? '#ff8' : '#f66';
+}
+
+// ========== 游戏主循环 ==========
+function gameLoop(time) {
+  requestAnimationFrame(gameLoop);
+  
+  const dt = Math.min((time - lastTime) / 1000, 0.1);
+  lastTime = time;
+  
+  if (gameRunning) {
     updatePlayer(dt);
+    updateCamera(dt);
     updateEnemies(dt);
     updateBullets(dt);
-    updateExplosions(dt);
+    updateParticles(dt);
     updateSpawning(dt);
+    updateHUD();
   }
   
   renderer.render(scene, camera);
@@ -379,9 +499,9 @@ function animate() {
 
 // ========== 工具函数 ==========
 function onResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(innerWidth, innerHeight);
 }
 
 function showToast(msg) {
@@ -394,21 +514,20 @@ function showToast(msg) {
 function gameOver(win) {
   gameRunning = false;
   document.getElementById('gameover').style.display = 'flex';
+  document.getElementById('resultTitle').textContent = win ? '任务完成!' : '任务失败';
+  document.getElementById('resultTitle').style.color = win ? '#8f8' : '#f66';
   document.getElementById('finalKills').textContent = kills;
-  document.querySelector('#gameover h2').textContent = win ? '任务完成!' : '任务失败';
-  document.querySelector('#gameover h2').style.color = win ? '#8f8' : '#f88';
 }
 
 function startGame() {
   document.getElementById('menu').style.display = 'none';
   document.getElementById('ui').style.display = 'block';
-  if(!gameRunning) {
-    init();
-    gameRunning = true;
-  }
+  
+  initScene();
+  gameRunning = true;
+  lastTime = performance.now();
+  requestAnimationFrame(gameLoop);
 }
-
-window.addEventListener('load', () => console.log('Page loaded'));
 </script>
 </body>
 </html>
