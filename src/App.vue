@@ -43,7 +43,7 @@
           6 个专业 AI Agent——策划、原画、架构、编码、测试、发布。自动完成设计、开发、审查、测试和上线。你只需描述想法。
         </p>
         <div class="hero-actions animate-fade-rise-delay-2">
-          <button class="liquid-glass-btn" @click="openGame(BASE + '/games/zero-fighter/')">
+          <button class="liquid-glass-btn" @click="openGame(BASE + '/games/zero-fighter/simple.html')">
             {{ lang === 'en' ? 'Play Zero Fighter Demo' : '试玩零式空战 Demo' }}
             <span style="font-size: 18px;">▶</span>
           </button>
