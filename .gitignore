@@ -8,3 +8,11 @@ dist
 
 # Ignore nested repos / unrelated work
 finance-legion/
+
+# Task summaries (transient working artifacts)
+task-summary_*.md
+memory/task-summary_*.md
+
+# Submission artifacts
+*-submission.zip
+*.submission.zip
