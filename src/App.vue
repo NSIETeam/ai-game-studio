@@ -101,45 +101,43 @@
           <p v-else>六个专属 AI Agent，各司其职。</p>
         </div>
         <div class="pipeline-flow">
-          <div class="pipeline-flow">
-            <div class="pipeline-stage" v-for="(stage, si) in pipelineStages" :key="si">
-              <div class="stage-label">{{ stage.label }}</div>
-              <div class="stage-agents">
+          <div class="pipeline-stage" v-for="(stage, si) in pipelineStages" :key="si">
+            <div class="stage-label">{{ stage.label }}</div>
+            <div class="stage-agents">
+              <div
+                v-for="(agent, i) in stage.agents"
+                :key="agent.name"
+                class="agent-card reveal"
+                :style="{ transitionDelay: `${(si * 4 + i) * 0.05}s` }"
+                @click="toggleAgent(agent.name)"
+              >
                 <div
-                  v-for="(agent, i) in stage.agents"
-                  :key="agent.name"
-                  class="agent-card reveal"
-                  :style="{ transitionDelay: `${(si * 4 + i) * 0.05}s` }"
-                  @click="toggleAgent(agent.name)"
-                >
-                  <div
-                    class="agent-icon"
-                    :style="{ background: agent.bg }"
-                  >{{ agent.icon }}</div>
-                  <div class="agent-info">
-                    <div class="agent-name">{{ lang === 'en' ? agent.name : agent.cnName }}</div>
-                    <div class="agent-desc">{{ lang === 'en' ? agent.desc : agent.cnDesc }}</div>
-                  </div>
-                  <div v-if="expandedAgent === agent.name" class="agent-detail">
-                    <div class="agent-detail-inner">
-                      <p>{{ lang === 'en' ? agent.detail : agent.cnDetail }}</p>
-                      <div class="agent-detail-tags">
-                        <span class="agent-detail-tag">
-                          <span class="tag-label">{{ lang === 'en' ? 'INPUT' : '输入' }}</span>
-                          <span>{{ agent.input }}</span>
-                        </span>
-                        <span class="agent-detail-tag">
-                          <span class="tag-label">{{ lang === 'en' ? 'OUTPUT' : '输出' }}</span>
-                          <span>{{ agent.output }}</span>
-                        </span>
-                      </div>
+                  class="agent-icon"
+                  :style="{ background: agent.bg }"
+                >{{ agent.icon }}</div>
+                <div class="agent-info">
+                  <div class="agent-name">{{ lang === 'en' ? agent.name : agent.cnName }}</div>
+                  <div class="agent-desc">{{ lang === 'en' ? agent.desc : agent.cnDesc }}</div>
+                </div>
+                <div v-if="expandedAgent === agent.name" class="agent-detail">
+                  <div class="agent-detail-inner">
+                    <p>{{ lang === 'en' ? agent.detail : agent.cnDetail }}</p>
+                    <div class="agent-detail-tags">
+                      <span class="agent-detail-tag">
+                        <span class="tag-label">{{ lang === 'en' ? 'INPUT' : '输入' }}</span>
+                        <span>{{ agent.input }}</span>
+                      </span>
+                      <span class="agent-detail-tag">
+                        <span class="tag-label">{{ lang === 'en' ? 'OUTPUT' : '输出' }}</span>
+                        <span>{{ agent.output }}</span>
+                      </span>
                     </div>
                   </div>
                 </div>
               </div>
-              <div v-if="si < pipelineStages.length - 1" class="stage-connector">
-                <span class="connector-arrow">▼</span>
-              </div>
+            </div>
+            <div v-if="si < pipelineStages.length - 1" class="stage-connector">
+              <span class="connector-arrow">▼</span>
             </div>
           </div>
         </div>
@@ -170,7 +168,7 @@
             <div class="work-desc">{{ lang === 'en' ? work.desc : work.cnDesc }}</div>
             <div class="work-actions">
               <a :href="work.url" target="_blank" class="liquid-glass-btn work-btn" @click.prevent="openGame(work.url)">
-                <span>▶</span> {{ lang === 'en' ? 'Play Demo' : '试玩演示' }}
+                <span>[>]</span> {{ lang === 'en' ? 'Play Demo' : '试玩演示' }}
               </a>
               <span class="work-input">{{ lang === 'en' ? 'Prompt:' : '提示词：' }} <em>{{ work.prompt }}</em></span>
             </div>
@@ -277,23 +275,24 @@ export default {
       activeSection: 'hero',
       expandedAgent: null,
       pipelineStages: [
-        { label: 'Creation Pipeline', agents: ['Game Designer','Pixel Artist','Game Architect','Game Coder','Game Tester','Game Publisher'] },
-        { label: 'QA & Deploy Gate', agents: ['Web Fixer','Project Overseer'] },
+        { label: 'Creation Pipeline', agents: [
+          { name: 'Game Designer', cnName: '游戏策划官', icon: '[D]', desc: 'Defines mechanics, rules, and player experience from your prompt', cnDesc: '从你的提示词中定义玩法、规则和玩家体验', bg: 'rgba(168, 130, 255, 0.12)', detail: 'Analyzes your one-sentence idea, expands it into a full Game Design Document (GDD) including core mechanics, win/lose conditions, difficulty curve, control scheme, and target audience.', cnDetail: '分析你的一句话创意，扩展为完整游戏设计文档(GDD)，包括核心玩法、胜负条件、难度曲线、操作方案和目标受众。', input: 'Your game idea (1 sentence)', output: 'PRD / Game Design Document' },
+          { name: 'Pixel Artist', cnName: '像素美术师', icon: '[A]', desc: 'Creates all visual assets — sprites, backgrounds, UI elements', cnDesc: '创作所有视觉资源——精灵图、背景、UI 元素', bg: 'rgba(255, 130, 180, 0.12)', detail: 'Translates the GDD into visual specifications: color palette, sprite dimensions, UI mockups, animation frames, tilemap layout, and parallax layer composition.', cnDetail: '将游戏设计文档转化为视觉规范：配色方案、精灵尺寸、UI 原型、动画帧、瓦片地图布局和视差层构成。', input: 'Game Design Document', output: 'Visual Design Spec (color, sprites, tiles, UI)' },
+          { name: 'Game Architect', cnName: '游戏架构师', icon: '[+]', desc: 'Designs the code structure, state management, and game loop', cnDesc: '设计代码结构、状态管理和游戏循环', bg: 'rgba(130, 200, 255, 0.12)', detail: 'Designs the software architecture: module decomposition, state machine, game loop structure, collision detection strategy, scoring system, and data flow between components.', cnDetail: '设计软件架构：模块拆分、状态机、游戏循环结构、碰撞检测策略、计分系统和组件间数据流。', input: 'GDD + Visual Spec', output: 'Technical Architecture Doc' },
+          { name: 'Game Coder', cnName: '游戏工程师', icon: '[C]', desc: 'Writes clean, performant game code — HTML, Canvas, CSS animations', cnDesc: '编写干净高性能的游戏代码——HTML, Canvas, CSS 动画', bg: 'rgba(100, 220, 180, 0.12)', detail: 'Writes production-ready game code in a single self-contained HTML file. Implements all mechanics, rendering, input handling, sound effects (Web Audio API), and performance optimization.', cnDetail: '编写可直接运行的单一 HTML 游戏文件。实现所有玩法、渲染、输入处理、音效（Web Audio API）和性能优化。', input: 'Architecture Doc + Visual Spec', output: 'index.html (playable game)' },
+          { name: 'Game Tester', cnName: '游戏测试官', icon: '[T]', desc: 'Runs the game, finds bugs, suggests balance and polish tweaks', cnDesc: '运行游戏、发现 bug、建议平衡性和润色调整', bg: 'rgba(255, 200, 80, 0.12)', detail: 'Loads and plays the game, performing systematic test cases: boundary conditions, input edge cases, collision edge cases, performance profiling, balance validation. Outputs a structured bug report with severity levels and fix recommendations.', cnDetail: '加载并试玩游戏，执行系统性测试用例：边界条件、输入边缘情况、碰撞边缘情况、性能分析和平衡性验证。输出结构化 Bug 报告，附带严重等级和修复建议。', input: 'index.html + Architecture Doc', output: 'Bug Report + Polish Suggestions' },
+          { name: 'Game Publisher', cnName: '游戏发行官', icon: '[P]', desc: 'Packages and deploys the final game — shareable, playable URL', cnDesc: '打包并部署最终游戏——生成可分享、可玩的 URL', bg: 'rgba(255, 130, 130, 0.12)', detail: 'Finalizes the game package: minifies code, generates metadata (thumbnail, title, description), creates the deployable artifact, and writes the entry to the game gallery JSON.', cnDetail: '完成游戏打包：代码压缩、生成元数据（缩略图、标题、描述）、创建可部署产物、将条目写入游戏画廊 JSON。', input: 'Final index.html + Bug Report', output: 'Deployed URL + games.json entry' },
+        ]},
+        { label: 'QA & Deploy Gate', agents: [
+          { name: 'Web Fixer', cnName: '网页修复专家', icon: '[W]', desc: 'Verifies live rendering on GitHub Pages, catches CDN/deploy issues', cnDesc: '验证 GitHub Pages 线上渲染效果，发现 CDN/部署问题', bg: 'rgba(255, 150, 50, 0.12)', detail: 'Visits the deployed live URL via web_fetch, checks HTTP status, verifies SPA rendering, catches CDN cache issues, path typos, and 404 fallback problems. Auto-fixes and re-deploys.', cnDetail: '通过 web_fetch 访问已部署的线上 URL，检查 HTTP 状态、验证 SPA 渲染效果、发现 CDN 缓存问题、路径大小写错误和 404 fallback。自动修复并重新部署。', input: 'Deployed URL + Source Code', output: 'Verified Live URL + Fix Report' },
+          { name: 'Project Overseer', cnName: '项目监督负责人', icon: '[O]', desc: 'Gatekeeper — reviews all agent output for quality before delivery', cnDesc: '守门员——在所有 Agent 输出交付前进行质量审查', bg: 'rgba(200, 200, 255, 0.15)', detail: 'Performs a multi-dimensional quality review: (1) agent file completeness, (2) website quality (emoji check, broken links, responsive), (3) game code static analysis (memory leaks, collision bugs, edge cases), (4) build and deploy verification. Runs 5 rounds of review-fix cycles.', cnDetail: '执行多维度质量审查：(1) Agent 文件完整性 (2) 网站品质 (emoji 检查、链接失效、响应式) (3) 游戏代码静态分析（内存泄漏、碰撞 Bug、边界情况）(4) 构建部署验证。运行 5 轮审查-修复循环。', input: 'All agent outputs + Final code', output: 'Quality Pass / Bug Report' },
+        ]},
       ],
       isLoading: false,
       showSuccess: false,
       loadingStep: -1,
       downloadUrl: `${BASE}/downloads/agent-pack-v1.zip`,
-      agents: [
-        { name: 'Game Designer', cnName: '游戏策划官', icon: '[D]', desc: 'Defines mechanics, rules, and player experience from your prompt', cnDesc: '从你的提示词中定义玩法、规则和玩家体验', bg: 'rgba(168, 130, 255, 0.12)', detail: 'Analyzes your one-sentence idea, expands it into a full Game Design Document (GDD) including core mechanics, win/lose conditions, difficulty curve, control scheme, and target audience.', cnDetail: '分析你的一句话创意，扩展为完整游戏设计文档(GDD)，包括核心玩法、胜负条件、难度曲线、操作方案和目标受众。', input: 'Your game idea (1 sentence)', output: 'PRD / Game Design Document' },
-        { name: 'Pixel Artist', cnName: '像素美术师', icon: '[A]', desc: 'Creates all visual assets — sprites, backgrounds, UI elements', cnDesc: '创作所有视觉资源——精灵图、背景、UI 元素', bg: 'rgba(255, 130, 180, 0.12)', detail: 'Translates the GDD into visual specifications: color palette, sprite dimensions, UI mockups, animation frames, tilemap layout, and parallax layer composition.', cnDetail: '将游戏设计文档转化为视觉规范：配色方案、精灵尺寸、UI 原型、动画帧、瓦片地图布局和视差层构成。', input: 'Game Design Document', output: 'Visual Design Spec (color, sprites, tiles, UI)' },
-        { name: 'Game Architect', cnName: '游戏架构师', icon: '[+]', desc: 'Designs the code structure, state management, and game loop', cnDesc: '设计代码结构、状态管理和游戏循环', bg: 'rgba(130, 200, 255, 0.12)', detail: 'Designs the software architecture: module decomposition, state machine, game loop structure, collision detection strategy, scoring system, and data flow between components.', cnDetail: '设计软件架构：模块拆分、状态机、游戏循环结构、碰撞检测策略、计分系统和组件间数据流。', input: 'GDD + Visual Spec', output: 'Technical Architecture Doc' },
-        { name: 'Game Coder', cnName: '游戏工程师', icon: '[C]', desc: 'Writes clean, performant game code — HTML, Canvas, CSS animations', cnDesc: '编写干净高性能的游戏代码——HTML, Canvas, CSS 动画', bg: 'rgba(100, 220, 180, 0.12)', detail: 'Writes production-ready game code in a single self-contained HTML file. Implements all mechanics, rendering, input handling, sound effects (Web Audio API), and performance optimization.', cnDetail: '编写可直接运行的单一 HTML 游戏文件。实现所有玩法、渲染、输入处理、音效（Web Audio API）和性能优化。', input: 'Architecture Doc + Visual Spec', output: 'index.html (playable game)' },
-        { name: 'Game Tester', cnName: '游戏测试官', icon: '[T]', desc: 'Runs the game, finds bugs, suggests balance and polish tweaks', cnDesc: '运行游戏、发现 bug、建议平衡性和润色调整', bg: 'rgba(255, 200, 80, 0.12)', detail: 'Loads and plays the game, performing systematic test cases: boundary conditions, input edge cases, collision edge cases, performance profiling, balance validation. Outputs a structured bug report with severity levels and fix recommendations.', cnDetail: '加载并试玩游戏，执行系统性测试用例：边界条件、输入边缘情况、碰撞边缘情况、性能分析和平衡性验证。输出结构化 Bug 报告，附带严重等级和修复建议。', input: 'index.html + Architecture Doc', output: 'Bug Report + Polish Suggestions' },
-        { name: 'Game Publisher', cnName: '游戏发行官', icon: '[P]', desc: 'Packages and deploys the final game — shareable, playable URL', cnDesc: '打包并部署最终游戏——生成可分享、可玩的 URL', bg: 'rgba(255, 130, 130, 0.12)', detail: 'Finalizes the game package: minifies code, generates metadata (thumbnail, title, description), creates the deployable artifact, and writes the entry to the game gallery JSON.', cnDetail: '完成游戏打包：代码压缩、生成元数据（缩略图、标题、描述）、创建可部署产物、将条目写入游戏画廊 JSON。', input: 'Final index.html + Bug Report', output: 'Deployed URL + games.json entry' },
-        { name: 'Web Fixer', cnName: '网页修复专家', icon: '[W]', desc: 'Verifies live rendering on GitHub Pages, catches CDN/deploy issues', cnDesc: '验证 GitHub Pages 线上渲染效果，发现 CDN/部署问题', bg: 'rgba(255, 150, 50, 0.12)', detail: 'Visits the deployed live URL via web_fetch, checks HTTP status, verifies SPA rendering, catches CDN cache issues, path typos, and 404 fallback problems. Auto-fixes and re-deploys.', cnDetail: '通过 web_fetch 访问已部署的线上 URL，检查 HTTP 状态、验证 SPA 渲染效果、发现 CDN 缓存问题、路径大小写错误和 404 fallback。自动修复并重新部署。', input: 'Deployed URL + Source Code', output: 'Verified Live URL + Fix Report' },
-        { name: 'Project Overseer', cnName: '项目监督负责人', icon: '[O]', desc: 'Gatekeeper — reviews all agent output for quality before delivery', cnDesc: '守门员——在所有 Agent 输出交付前进行质量审查', bg: 'rgba(200, 200, 255, 0.15)', detail: 'Performs a multi-dimensional quality review: (1) agent file completeness, (2) website quality (emoji check, broken links, responsive), (3) game code static analysis (memory leaks, collision bugs, edge cases), (4) build and deploy verification. Runs 5 rounds of review-fix cycles.', cnDetail: '执行多维度质量审查：(1) Agent 文件完整性 (2) 网站品质 (emoji 检查、链接失效、响应式) (3) 游戏代码静态分析（内存泄漏、碰撞 Bug、边界情况）(4) 构建部署验证。运行 5 轮审查-修复循环。', input: 'All agent outputs + Final code', output: 'Quality Pass / Bug Report' },
-      ],
+      // agents array removed — now inline in pipelineStages
       realWorks: [
         {
           title: 'MiniCraft 3D', tag: 'New',
