@@ -9,7 +9,7 @@
 body{background:#000}
 canvas{display:block}
 #crosshair{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;color:#fff;font-size:24px;font-family:Arial,sans-serif;text-shadow:0 0 2px #000;z-index:10;line-height:1;user-select:none}
-#crosshair::before{content:'+';display:block;font-weight:100;opacity:.85}
+#crosshair::before{content:'+';display:block;font-weight:100;opacity:.85}#crosshair.target::before{content:'▣';font-weight:400;opacity:1;text-shadow:0 0 8px #fff}
 #hotbar{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:4px;z-index:10;user-select:none}
 .slot{width:48px;height:48px;border:2px solid rgba(255,255,255,.4);border-radius:4px;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:border-color .15s,background .15s}
 .slot.active{border-color:#fff;background:rgba(255,255,255,.15)}
@@ -28,7 +28,7 @@ canvas{display:block}
 <div id="hotbar"></div>
 <div id="info">WASD 移动 · 鼠标视角 · 左键破坏 · 右键放置 · 1-4 切换方块 · 空格跳跃</div>
 <div id="blocker">
-  <h1>⛏ MiniCraft</h1>
+  <h1>MiniCraft 3D</h1>
   <p>点击进入游戏</p>
   <div class="keys">
     WASD 移动 · 鼠标控制视角<br>
@@ -346,6 +346,8 @@ highlightMesh.visible = false;
 scene.add(highlightMesh);
 
 function updateHighlight(){
+  const sx=Math.floor(player.position.x),sz=Math.floor(player.position.z);
+  const sy=Math.floor(player.position.y-0.1);
   raycaster.setFromCamera({x:0,y:0},camera);
   let bestDist=Infinity;let bestBlock=null;
   for(const key of Object.keys(chunks)){const chunk=chunks[key];
@@ -355,10 +357,9 @@ function updateHighlight(){
       const entry=raycaster.ray.intersectBox(bc,new THREE.Vector3());
       if(entry){const dist=raycaster.ray.origin.distanceTo(entry);
         if(dist<bestDist){bestDist=dist;bestBlock=b;}}}}
-  if(bestBlock&&bestDist<6){
-    // Dont break block under feet
-    if(bestBlock.x===standX&&bestBlock.z===standZ&&(bestBlock.y===standY||bestBlock.y===standY+1))return;highlightMesh.position.set(bestBlock.x+0.5,bestBlock.y+0.5,bestBlock.z+0.5);highlightMesh.visible=true;}
-  else{highlightMesh.visible=false;}
+  if(bestBlock&&bestDist<6&&!(bestBlock.x===sx&&bestBlock.z===sz&&(bestBlock.y===sy||bestBlock.y===sy+1))){
+    highlightMesh.position.set(bestBlock.x+0.5,bestBlock.y+0.5,bestBlock.z+0.5);highlightMesh.visible=true;document.getElementById('crosshair').classList.add('target');}
+  else{highlightMesh.visible=false;document.getElementById('crosshair').classList.remove('target');}
 }
 
 // ===== SOUND =====
@@ -398,7 +399,7 @@ const blockColors={'grass':0x8BAA6E,'dirt':0x8B6E4E,'stone':0x808080,'wood':0x8B
 let waterBlocks=[];
 function addWater(x,y,z){
   const g=new THREE.BoxGeometry(1,1,1);
-  const m=new THREE.MeshLambertMaterial({color:0x1B6A9E,transparent:true,opacity:0.6});
+  const m=new THREE.MeshLambertMaterial({color:0x1B6A9E,transparent:true,opacity:0.6,depthWrite:false,renderOrder:-1});
   const mesh=new THREE.Mesh(g,m);
   mesh.position.set(x+0.5,y+0.5,z+0.5);
   scene.add(mesh);
@@ -423,7 +424,7 @@ raycaster.far=6;
 // ===== CONTROLS =====
 const keys={};
 document.addEventListener('keydown',e=>{keys[e.code]=true;
-  if(e.code.startsWith('Digit')&&e.code[5]>='1'&&e.code[5]<='4'){
+  if(e.code.startsWith('Digit')&&e.code[5]>='1'&&e.code[5]<='4'&&e.code[5]-'1'<BLOCK_LIST.length){
     selectedSlot=parseInt(e.code[5])-1;updateHotbar();
   }
   if(e.code==='Space')e.preventDefault();
@@ -461,8 +462,6 @@ function hitBlock(){
   const standY=Math.floor(player.position.y-0.1);
   raycaster.setFromCamera({x:0,y:0},camera);
   // Check all blocks manually
-  const dir=raycaster.ray.direction.clone();
-  const origin=raycaster.ray.origin.clone();
   let bestDist=Infinity;let bestBlock=null;let bestNormal=null;
 
   // Iterate world blocks
@@ -504,6 +503,7 @@ function hitBlock(){
     const col=blockColors[bType]||0x888888;
     spawnParticles(bestBlock.x,bestBlock.y,bestBlock.z,col);
     if(inventory[bType]!==undefined)inventory[bType]++;
+    updateInvCounts();
   }
 }
 
@@ -553,6 +553,7 @@ function placeBlock(){
         rebuildAll();
         initAudio();playPlace();
         if(inventory[selType]!==undefined&&inventory[selType]>0)inventory[selType]--;
+        updateInvCounts();
       }
     }
   }
@@ -565,17 +566,14 @@ function collides(x,y,z){
 
 function canMoveTo(x,y,z){
   const bx=Math.floor(x),by=Math.floor(y),bz=Math.floor(z);
-  const hw=.3,hh=.9;
-  // Check AABB corners
-  for(let dx=-1;dx<=1;dx+=2){
-    for(let dz=-1;dz<=1;dz+=2){
-      for(let dy=0;dy<=1;dy++){
-        const cx=bx+(dx>0?1-hw:hw);
-        const cy=by+dy*hh;
-        const cz=bz+(dz>0?1-hw:hw);
-        if(collides(cx,cy,cz))return false;
-      }
-    }
+  const r=.29,h=1.7;
+  // Swept AABB - check 11 points for better edge detection
+  const checks=[[-r,-h/2,-r],[-r,-h/2,r],[r,-h/2,-r],[r,-h/2,r],
+                [-r,h/2,-r],[-r,h/2,r],[r,h/2,-r],[r,h/2,r],
+                [0,0,0],[0,-h/2,0],[0,h/2,0]];
+  for(const [dx,dy,dz] of checks){
+    const cx=bx+0.5+dx,cy=by+1+dy,cz=bz+0.5+dz;
+    if(collides(Math.floor(cx),Math.floor(cy),Math.floor(cz)))return false;
   }
   return true;
 }
@@ -583,7 +581,7 @@ function canMoveTo(x,y,z){
 // ===== HOTBAR =====
 const hotbarEl=document.getElementById('hotbar');
 const iconCanvases=[];
-for(let i=0;i<4;i++){
+for(let i=0;i<BLOCK_LIST.length;i++){
   const slot=document.createElement('div');slot.className='slot'+(i===0?' active':'');
   const c=document.createElement('canvas');c.width=32;c.height=32;
   const ctx=c.getContext('2d');
@@ -596,19 +594,21 @@ for(let i=0;i<4;i++){
   slot.addEventListener('click',()=>{selectedSlot=i;updateHotbar();});
   hotbarEl.appendChild(slot);
   iconCanvases.push(c);
+  // Init inventory count display
+  const countEl=document.createElement('span');countEl.className='inv-count';
+  countEl.textContent='';slot.appendChild(countEl);
 }
 function updateHotbar(){
   const slots=hotbarEl.querySelectorAll('.slot');
   slots.forEach((s,i)=>{s.className='slot'+(i===selectedSlot?' active':'');});
 }
-function updateInventoryDisplay(){
+function updateInvCounts(){
   const slots=hotbarEl.querySelectorAll('.slot');
   slots.forEach((s,i)=>{
     const name=BLOCK_LIST[i];
     const count=inventory[name];
     let countEl=s.querySelector('.inv-count');
-    if(!countEl){countEl=document.createElement('span');countEl.className='inv-count';s.appendChild(countEl);}
-    countEl.textContent=count>0?count:'';
+    if(countEl)countEl.textContent=count>0?count:'';
   });
 }
 
@@ -653,7 +653,7 @@ function update(){
 
     // Gravity
     velocity.y+=GRAVITY*dt;
-    if(keys['Space']&&onGround){velocity.y=JUMP_SPEED;onGround=false;}
+    if(keys['Space']&&onGround){velocity.y=JUMP_SPEED;onGround=false;initAudio();playJump();}
 
     // Try Y
     const py=player.position.y+velocity.y*dt;
@@ -679,7 +679,6 @@ function update(){
   camera.position.copy(player.position);
   camera.position.y+=1.6; // eye height
 
-  updateInventoryDisplay();
   renderer.render(scene,camera);
   requestAnimationFrame(update);
 }
@@ -691,6 +690,8 @@ window.addEventListener('resize',()=>{
   renderer.setSize(window.innerWidth,window.innerHeight);
 });
 
+// Initial inventory display
+updateInvCounts();
 // Start
 update();
 
