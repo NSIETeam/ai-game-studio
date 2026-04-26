@@ -14,6 +14,7 @@
           <a href="#pipeline" :class="{ active: activeSection === 'pipeline' }">{{ lang === 'en' ? 'Pipeline' : '流水线' }}</a>
           <a href="#works" :class="{ active: activeSection === 'works' }">{{ lang === 'en' ? 'Works' : '作品' }}</a>
           <a href="#about" :class="{ active: activeSection === 'about' }">{{ lang === 'en' ? 'About' : '关于' }}</a>
+          <a href="#comments" :class="{ active: activeSection === 'comments' }">{{ lang === 'en' ? 'Discussion' : '讨论' }}</a>
           <a href="#cta" :class="{ active: activeSection === 'cta' }">{{ lang === 'en' ? 'Reach Us' : '联系我们' }}</a>
           <a href="https://nsieteam.github.io/ai-finance-legion/" class="liquid-glass-btn nav-cta" style="gap:4px;font-size:11px;">
             <span style="font-size:14px;">[#]</span>
@@ -241,6 +242,62 @@
       </div>
     </section>
 
+    
+    <!-- Comments -->
+    <section class="section comments-section" id="comments">
+      <div class="container reveal">
+        <div class="pipeline-header">
+          <h2 v-if="lang === 'en'"><span class="gradient-text">Discussion</span></h2>
+          <h2 v-else><span class="gradient-text">讨论区</span></h2>
+          <p v-if="lang === 'en'">Share your thoughts, ideas, and feedback with the community.</p>
+          <p v-else>分享你的想法、创意和反馈。</p>
+        </div>
+        <div class="comments-box glass" style="max-width:700px;margin:0 auto;padding:32px;border-radius:24px;">
+          <div class="comment-form" style="margin-bottom:24px;">
+            <input
+              v-model="commentName"
+              :placeholder="lang === 'en' ? 'Your name (optional)' : '你的名字（可选）'"
+              class="comment-input"
+              style="width:100%;padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:#fff;font-family:var(--font-body);font-size:14px;margin-bottom:10px;"
+            />
+            <textarea
+              v-model="commentText"
+              :placeholder="lang === 'en' ? 'Write your comment...' : '写下你的评论...'"
+              rows="3"
+              class="comment-textarea"
+              style="width:100%;padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:#fff;font-family:var(--font-body);font-size:14px;resize:vertical;margin-bottom:10px;"
+            ></textarea>
+            <button
+              class="liquid-glass-btn"
+              @click="submitComment"
+              :disabled="!commentText.trim()"
+              style="padding:10px 28px;border-radius:100px;font-size:13px;"
+            >
+              {{ lang === 'en' ? 'Post Comment' : '发表评论' }}
+            </button>
+          </div>
+          <div class="comments-list" v-if="comments.length > 0">
+            <div
+              v-for="(comment, ci) in comments"
+              :key="ci"
+              class="comment-item"
+              style="padding:16px;border-top:1px solid rgba(255,255,255,0.05);"
+            >
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                <span style="font-size:13px;color:var(--green);font-family:var(--font-mono);">[#{{ comments.length - ci }}]</span>
+                <span style="font-size:13px;color:var(--fg);font-weight:500;">{{ comment.name || (lang === 'en' ? 'Anonymous' : '匿名用户') }}</span>
+                <span style="font-size:11px;color:var(--muted);opacity:0.5;">{{ comment.time }}</span>
+              </div>
+              <p style="font-size:13px;color:var(--muted);line-height:1.6;white-space:pre-wrap;">{{ comment.text }}</p>
+            </div>
+          </div>
+          <div v-else style="text-align:center;padding:24px;color:var(--muted);font-size:13px;opacity:0.5;">
+            {{ lang === 'en' ? 'No comments yet. Be the first to share your thoughts!' : '暂无评论，来发表第一条评论吧！' }}
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Footer -->
     <footer class="footer">
       <div class="container footer-inner">
@@ -274,6 +331,9 @@ export default {
       ideaInput: '',
       activeSection: 'hero',
       expandedAgent: null,
+      commentName: '',
+      commentText: '',
+      comments: [],
       pipelineStages: [
         { label: 'Creation Pipeline', agents: [
           { name: 'Game Designer', cnName: '游戏策划官', icon: '[D]', desc: 'Defines mechanics, rules, and player experience from your prompt', cnDesc: '从你的提示词中定义玩法、规则和玩家体验', bg: 'rgba(168, 130, 255, 0.12)', detail: 'Analyzes your one-sentence idea, expands it into a full Game Design Document (GDD) including core mechanics, win/lose conditions, difficulty curve, control scheme, and target audience.', cnDetail: '分析你的一句话创意，扩展为完整游戏设计文档(GDD)，包括核心玩法、胜负条件、难度曲线、操作方案和目标受众。', input: 'Your game idea (1 sentence)', output: 'PRD / Game Design Document' },
@@ -335,7 +395,11 @@ export default {
     }
   },
   mounted() {
-    window.addEventListener('scroll', this.onScroll)
+    window.addEventListener('scroll', this.onScroll);
+      try {
+        var saved = JSON.parse(localStorage.getItem('aiGameStudioComments'));
+        if (saved && Array.isArray(saved)) this.comments = saved;
+      } catch(e) {}
     this.$nextTick(() => this.setupObserver())
   },
   beforeDestroy() {
@@ -352,7 +416,7 @@ export default {
     onScroll() {
       this.scrolled = window.scrollY > 60
       // Update active nav section based on scroll position
-      const sections = ['pipeline', 'works', 'about', 'cta']
+      const sections = ['pipeline', 'works', 'about', 'cta', 'comments']
       for (const id of sections) {
         const el = document.getElementById(id)
         if (el) {
@@ -397,6 +461,19 @@ export default {
     },
     openGame(url) {
       window.open(url, '_blank')
+    },
+    submitComment() {
+      var text = this.commentText.trim();
+      if (!text) return;
+      this.comments.unshift({
+        name: this.commentName.trim(),
+        text: text,
+        time: new Date().toLocaleDateString(this.lang === 'en' ? 'en-US' : 'zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+      });
+      try {
+        localStorage.setItem('aiGameStudioComments', JSON.stringify(this.comments));
+      } catch(e) {}
+      this.commentText = '';
     },
     handleIdea() {
       const idea = this.ideaInput.trim()

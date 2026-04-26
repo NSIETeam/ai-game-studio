@@ -193,6 +193,7 @@ function smoothNoise(x,z){
 function generateWorld(){
   for(let x=0;x<W;x++){
     for(let z=0;z<W;z++){
+      addB(x,-1,z,'stone');
       const h=Math.floor(smoothNoise(x,z)*4+1);
       const ch=Math.max(0,Math.min(3,h));
       if(ch===0){addB(x,0,z,'grass');addB(x,1,z,'water');}
@@ -205,6 +206,21 @@ function generateWorld(){
   }
   let seed=54321;
   function rnd(){seed=(seed*1664525+1013904223)&0xFFFFFFFF;return (seed>>>0)/4294967296;}
+  // Clear center 5x5 spawn area
+  const spx=Math.floor(W/2),spz=Math.floor(W/2);
+  for(let dx=-2;dx<=2;dx++){
+    for(let dz=-2;dz<=2;dz++){
+      for(let y=0;y<H;y++){
+        remB(spx+dx,y,spz+dz);
+      }
+    }
+  }
+  // Place flat grass floor in spawn
+  for(let dx=-2;dx<=2;dx++){
+    for(let dz=-2;dz<=2;dz++){
+      addB(spx+dx,0,spz+dz,'grass');
+    }
+  }
   for(let t=0;t<10;t++){
     const tx=2+Math.floor(rnd()*(W-4)),tz=2+Math.floor(rnd()*(W-4));
     if(Math.abs(tx-W/2)<3&&Math.abs(tz-W/2)<3)continue;
@@ -224,11 +240,11 @@ function generateWorld(){
 }
 
 // ===== INVENTORY =====
-let inventory={dirt:64,stone:0,grass:0,wood:0,leaves:0};
+let inventory={dirt:64,stone:32,grass:16,wood:16,leaves:8};
 
 // ===== PLAYER =====
 const player=new THREE.Object3D();
-player.position.set(W/2,10,W/2);
+player.position.set(W/2,12,W/2);
 const vel=new THREE.Vector3();
 let pitch=0,yaw=0;
 let onGround=false;
@@ -281,7 +297,7 @@ function placeBlock(){
   if(nx===px&&ny===py&&nz===pz||nx===px&&ny===py+1&&nz===pz||nx===px&&ny===py+2&&nz===pz)return;
   if(hasB(nx,ny,nz))return;
   const sel=blockList[selectedSlot];
-  if(inventory[sel]===0&&sel!=='dirt'&&sel!=='stone'&&sel!=='grass')return;
+  if(inventory[sel]===0&&sel!=='dirt'&&sel!=='stone'&&sel!=='grass'&&sel!=='leaves'&&sel!=='wood'&&sel!=='water')return;
   addB(nx,ny,nz,sel);dirty=true;playPlace();
   if(inventory[sel]!==undefined&&inventory[sel]>0)inventory[sel]--;
   updateHotbar();
@@ -292,7 +308,9 @@ function isCollidable(x,y,z){
   const t=getB(x,y,z);
   return t!==undefined&&t!=='water'&&t!=='leaves';
 }
+function isWater(x,y,z){return getB(x,y,z)==='water';}
 function canMoveTo(x,y,z){
+  if(x<0||x>=W||z<0||z>=W||y<-5)return false;
   const r=0.28,h=1.6;
   const pts=[[-r,-h/2,-r],[-r,-h/2,r],[r,-h/2,-r],[r,-h/2,r],
              [-r,0,-r],[-r,0,r],[r,0,-r],[r,0,r],
@@ -369,8 +387,14 @@ document.addEventListener('mousedown',e=>{
   if(e.button===0)hitBlock();if(e.button===2)placeBlock();
 });
 document.addEventListener('contextmenu',e=>e.preventDefault());
-document.getElementById('startBtn').addEventListener('click',()=>renderer.domElement.requestPointerLock());
-document.getElementById('blocker').addEventListener('click',()=>{if(!pointerLocked)renderer.domElement.requestPointerLock();});
+function requestPointerLockAndFocus(){
+  if(!pointerLocked){
+    renderer.domElement.requestPointerLock();
+    renderer.domElement.focus();
+  }
+}
+document.getElementById('startBtn').addEventListener('click',()=>requestPointerLockAndFocus());
+document.getElementById('blocker').addEventListener('click',()=>requestPointerLockAndFocus());
 document.addEventListener('pointerlockchange',()=>{
   pointerLocked=document.pointerLockElement===renderer.domElement;
   document.getElementById('blocker').style.display=pointerLocked?'none':'flex';
@@ -432,8 +456,12 @@ function update(time){
     if(keys['Space']&&onGround){vel.y=JUMP_SPEED;onGround=false;playJump();initAudio();}
     if(canMoveTo(player.position.x,player.position.y+vel.y*dt,player.position.z)){player.position.y+=vel.y*dt;onGround=false;}
     else{if(vel.y<0)onGround=true;vel.y=0;}
+    // Water floating: stay on surface when standing on water
+    const feetY=Math.floor(player.position.y-0.1);
+    const waterBelow=isWater(Math.floor(player.position.x),feetY,Math.floor(player.position.z));
+    if(waterBelow&&vel.y<=0){player.position.y=feetY+1;vel.y=0;onGround=true;}
 
-    if(player.position.y<-5){player.position.set(W/2,10,W/2);vel.set(0,0,0);}
+    if(player.position.y<-5){player.position.set(W/2,12,W/2);vel.set(0,0,0);}
     player.position.x=Math.max(0.4,Math.min(W-0.4,player.position.x));
     player.position.z=Math.max(0.4,Math.min(W-0.4,player.position.z));
     if(player.position.y<0.4){player.position.y=0.4;vel.y=0;onGround=true;}
