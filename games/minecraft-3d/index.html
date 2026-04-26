@@ -407,7 +407,7 @@ function addWater(x,y,z){
 }
 // ===== PLAYER =====
 const player=new THREE.Object3D();
-player.position.set(8,5,8);
+player.position.set(8,12,8);
 const velocity=new THREE.Vector3();
 let pitch=0,yaw=0;
 const GRAVITY=-20;
@@ -547,7 +547,7 @@ function placeBlock(){
     if(nx===px&&ny===py+1&&nz===pz)return;
     if(!getBlock(nx,ny,nz)){
       const selType=BLOCK_LIST[selectedSlot];
-      if(inventory[selType]>0||selType==='dirt'||selType==='stone'||selType==='grass'){
+      if(inventory[selType]>0||selType==='dirt'||selType==='stone'||selType==='grass'||selType==='leaves'||selType==='wood'){
         addBlock(nx,ny,nz,selType);
         for(const key of Object.keys(chunks))chunks[key].needsRebuild=true;
         rebuildAll();
@@ -561,7 +561,8 @@ function placeBlock(){
 
 // ===== COLLISION =====
 function collides(x,y,z){
-  return getBlock(Math.floor(x),Math.floor(y),Math.floor(z))!==null;
+  const b=getBlock(Math.floor(x),Math.floor(y),Math.floor(z));
+  return b!==null&&b!==undefined;
 }
 
 function canMoveTo(x,y,z){
@@ -666,7 +667,7 @@ function update(){
     }
 
     // Void detection - respawn if fallen out
-  if(player.position.y<-16){
+  if(player.position.y<-8){
     player.position.set(8,12,8);velocity.set(0,0,0);onGround=false;
   }
   // Clamp to world
