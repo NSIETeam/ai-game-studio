@@ -42,6 +42,17 @@
         <p class="animate-fade-rise-delay" v-else>
           6 个专业 AI Agent——策划、原画、架构、编码、测试、发布。自动完成设计、开发、审查、测试和上线。你只需描述想法。
         </p>
+
+        <p class="animate-fade-rise-delay" style="margin-top: 14px; color: rgba(255,255,255,.78)" v-if="lang === 'en'">
+          <b>L3 Strong + Stable</b>: not “it runs”, but “it ships and stays shippable”.
+          <b>Quality Gate</b> (review + E2E + CI) blocks bad releases.
+          <b>Two-track</b> <code>stable</code>/<code>latest</code>, one-click rollback, offline-friendly deps.
+        </p>
+        <p class="animate-fade-rise-delay" style="margin-top: 14px; color: rgba(255,255,255,.78)" v-else>
+          <b>L3 强 + 稳</b>：不是“能跑就行”，而是“可发布、可维护”。
+          <b>质量闸门</b>（审查 + E2E 自动化 + CI）拦截带病上线。
+          <b>双通道</b> <code>stable</code>/<code>latest</code>，支持一键回滚，依赖可离线。
+        </p>
         <div class="hero-actions animate-fade-rise-delay-2">
           <button class="liquid-glass-btn" @click="openGame(BASE + '/games/zero-fighter/')">
             {{ lang === 'en' ? 'Play Zero Fighter Demo' : '试玩零式空战 Demo' }}
