@@ -175,10 +175,10 @@
     <section class="section-sm" id="skill-pack">
       <div class="container">
         <div class="pipeline-header reveal">
-          <h2 v-if="lang === 'en'">Download <span class="gradient-text">Agent Legion Skill Pack</span></h2>
-          <h2 v-else>下载 <span class="gradient-text">Agent 军团 Skill 包</span></h2>
-          <p v-if="lang === 'en'">Get all 6 specialized AI agents as EasyClaw skills. Install once, use forever.</p>
-          <p v-else>获取 6 个专业 AI Agent 的 EasyClaw Skill 包。一次安装，永久使用。</p>
+          <h2 v-if="lang === 'en'">Download <span class="gradient-text">Agent Legion Skill Pack (L3)</span></h2>
+          <h2 v-else>下载 <span class="gradient-text">Agent 军团 Skill 包 (L3)</span></h2>
+          <p v-if="lang === 'en'">Get all 6 specialized AI agents as EasyClaw skills. <b>Quality Gate verified</b> with E2E tests. Install once, use forever.</p>
+          <p v-else>获取 6 个专业 AI Agent 的 EasyClaw Skill 包。<b>质量闸门验证</b>通过 E2E 测试。一次安装，永久使用。</p>
         </div>
         <div class="caps-grid" style="max-width: 800px; margin: 0 auto;">
           <div class="cap-item reveal" v-for="(skill, i) in skillPackSkills" :key="skill.name" :style="{ transitionDelay: `${i * 0.06}s` }">
@@ -196,7 +196,7 @@
             <span style="font-size: 16px;">⬇</span>
           </button>
           <div style="margin-top: 12px; font-size: 13px; color: hsl(var(--muted-foreground));">
-            {{ lang === 'en' ? 'File size: ~250KB' : '文件大小：~250KB' }}
+            {{ lang === 'en' ? 'Latest: L3 (with Quality Gate) • SHA256 verified' : '最新版本：L3（含质量闸门）• SHA256 校验' }}
           </div>
         </div>
       </div>
@@ -381,14 +381,9 @@ export default {
     },
     downloadSkillPack() {
       const link = document.createElement('a')
-      link.href = BASE + '/downloads/agent-legion-skill-pack.zip'
-      link.download = 'agent-legion-skill-pack.zip'
-      link.click()
-    },
-    downloadSkillPack() {
-      const link = document.createElement('a')
-      link.href = BASE + '/downloads/agent-legion-skill-pack.zip'
-      link.download = 'agent-legion-skill-pack.zip'
+      link.href = BASE + '/downloads/agent-legion-skill-pack-l3-latest.zip'
+      link.download = 'agent-legion-skill-pack-l3-latest.zip'
+      document.body.appendChild(link)
       link.click()
       this.$nextTick(() => { link.remove() })
     }
