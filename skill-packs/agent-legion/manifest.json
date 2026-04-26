@@ -1,0 +1,15 @@
+{
+  "name": "agent-legion-skill-pack",
+  "level": "L3",
+  "version": "0.1.0",
+  "platform": "universal",
+  "focus": ["strong", "stable"],
+  "includes": {
+    "workflow": true,
+    "quality_gate": true,
+    "e2e": true,
+    "ci_templates": true,
+    "release_tooling": true,
+    "offline_deps_strategy": true
+  }
+}

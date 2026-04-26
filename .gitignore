@@ -1,22 +1,10 @@
-﻿node_modules
+node_modules
+.DS_Store
 dist
-docs/task-summary*
-docs/*.md
-task-summary*.md
 
-# Keep docs/ for GitHub Pages
-!docs/
+# Playwright
+/test-results/
+/playwright-report/
 
-# Backup / stale artifacts
-docs-bak/
-ai-game-studio-submission.zip
-finance-legion/ai-finance-legion-agent-pack.zip
-
-# Generated files (build.py produces these)
-finance-legion/index.html
-finance-legion/src/App.vue
-finance-legion/src/style.css
-finance-legion/src/main.js
-
-# Finance Legion (separate repo)
+# Ignore nested repos / unrelated work
 finance-legion/

@@ -6,12 +6,19 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && xcopy /E /I /Y games docs\\games >nul",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "e2e:install": "playwright install --with-deps",
+    "e2e": "playwright test", 
+    "e2e:smoke:server": "vite preview --port 4173 --strictPort", 
+    "e2e:smoke:test": "playwright test",
+
+    "e2e:smoke": "node ./scripts/e2e-smoke.mjs"
   },
   "dependencies": {
     "vue": "^3.5.32"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@vitejs/plugin-vue": "^6.0.6",
     "vite": "^8.0.10"
   }
