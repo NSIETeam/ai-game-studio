@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>零式测试</title>
+<style>
+body{margin:0;padding:0;background:#000;color:#fff;font-family:sans-serif}
+#container{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh}
+canvas{border:1px solid #fff}
+</style>
+</head>
+<body>
+<div id="container">
+  <h1>零式测试</h1>
+  <canvas id="canvas" width="400" height="300"></canvas>
+  <div id="info">测试页面</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+console.log('Three.js loaded');
+console.log('THREE:', THREE);
+
+// 测试 Three.js 是否正常工作
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, 400/300, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({canvas: document.getElementById('canvas')});
+renderer.setSize(400, 300);
+
+const geometry = new THREE.BoxGeometry();
+const material = new THREE.MeshBasicMaterial({color: 0x00ff00});
+const cube = new THREE.Mesh(geometry, material);
+scene.add(cube);
+
+camera.position.z = 5;
+
+function animate() {
+  requestAnimationFrame(animate);
+  cube.rotation.x += 0.01;
+  cube.rotation.y += 0.01;
+  renderer.render(scene, camera);
+}
+
+animate();
+console.log('Animation started');
+</script>
+</body>
+</html>
