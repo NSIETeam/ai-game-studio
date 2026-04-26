@@ -226,7 +226,7 @@ class Chunk{
 
     // Leaves as transparent
     if(leaf.length>0){
-      const lMat=new THREE.MeshLambertMaterial({map:TEX.leaves,transparent:true,opacity:.85,depthWrite:false});
+      const lMat=new THREE.MeshLambertMaterial({map:TEX.leaves,transparent:true,opacity:.85,depthWrite:false,renderOrder:1});
       const lm=new THREE.InstancedMesh(geom,lMat,leaf.length);
       const dummy=new THREE.Object3D();
       for(let i=0;i<leaf.length;i++){
@@ -275,6 +275,9 @@ function rebuildAll(){
 
 // ===== TERRAIN GENERATION =====
 function generateWorld(){
+  // Clear old water meshes
+  for(const w of waterBlocks){if(w.mesh.parent)w.mesh.parent.remove(w.mesh);w.mesh.geometry.dispose();w.mesh.material.dispose();}
+  waterBlocks=[];
   // Simple noise for height variation
   let seed=12345;
   function rand(){seed=(seed*1664525+1013904223)&0xFFFFFFFF;return (seed>>>0)/4294967296;}
@@ -352,7 +355,9 @@ function updateHighlight(){
       const entry=raycaster.ray.intersectBox(bc,new THREE.Vector3());
       if(entry){const dist=raycaster.ray.origin.distanceTo(entry);
         if(dist<bestDist){bestDist=dist;bestBlock=b;}}}}
-  if(bestBlock&&bestDist<6){highlightMesh.position.set(bestBlock.x+0.5,bestBlock.y+0.5,bestBlock.z+0.5);highlightMesh.visible=true;}
+  if(bestBlock&&bestDist<6){
+    // Dont break block under feet
+    if(bestBlock.x===standX&&bestBlock.z===standZ&&(bestBlock.y===standY||bestBlock.y===standY+1))return;highlightMesh.position.set(bestBlock.x+0.5,bestBlock.y+0.5,bestBlock.z+0.5);highlightMesh.visible=true;}
   else{highlightMesh.visible=false;}
 }
 
@@ -451,6 +456,9 @@ document.addEventListener('pointerlockchange',()=>{
 
 // ===== BLOCK INTERACTION =====
 function hitBlock(){
+  // Player standing position
+  const standX=Math.floor(player.position.x),standZ=Math.floor(player.position.z);
+  const standY=Math.floor(player.position.y-0.1);
   raycaster.setFromCamera({x:0,y:0},camera);
   // Check all blocks manually
   const dir=raycaster.ray.direction.clone();
@@ -486,6 +494,8 @@ function hitBlock(){
     }
   }
   if(bestBlock&&bestDist<6){
+    // Dont break block under feet
+    if(bestBlock.x===standX&&bestBlock.z===standZ&&(bestBlock.y===standY||bestBlock.y===standY+1))return;
     const bType=getBlock(bestBlock.x,bestBlock.y,bestBlock.z).type;
     removeBlock(bestBlock.x,bestBlock.y,bestBlock.z);
     for(const key of Object.keys(chunks))chunks[key].needsRebuild=true;
@@ -537,7 +547,7 @@ function placeBlock(){
     if(nx===px&&ny===py+1&&nz===pz)return;
     if(!getBlock(nx,ny,nz)){
       const selType=BLOCK_LIST[selectedSlot];
-      if(inventory[selType]>0||selType==='dirt'||selType==='stone'){
+      if(inventory[selType]>0||selType==='dirt'||selType==='stone'||selType==='grass'){
         addBlock(nx,ny,nz,selType);
         for(const key of Object.keys(chunks))chunks[key].needsRebuild=true;
         rebuildAll();
@@ -655,7 +665,11 @@ function update(){
       velocity.y=0;
     }
 
-    // Clamp to world
+    // Void detection - respawn if fallen out
+  if(player.position.y<-16){
+    player.position.set(8,12,8);velocity.set(0,0,0);onGround=false;
+  }
+  // Clamp to world
     player.position.x=Math.max(.5,Math.min(W-.5,player.position.x));
     player.position.z=Math.max(.5,Math.min(W-.5,player.position.z));
     if(player.position.y<.5){player.position.y=.5;velocity.y=0;onGround=true;}
