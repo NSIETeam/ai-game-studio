@@ -242,6 +242,9 @@ function updatePlayer(dt) {
   const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(player.quaternion);
   player.position.add(fwd.clone().multiplyScalar(pd.speed * dt));
   
+  // 限制飞机不要飞太远
+  player.position.z = Math.max(player.position.z, -200);
+  
   // 螺旋桨
   if(player.userData.prop) player.userData.prop.rotation.z += dt * pd.speed * 20;
   
@@ -252,9 +255,17 @@ function updatePlayer(dt) {
     shoot();
   }
   
-  // 相机跟随
-  camera.position.lerp(new THREE.Vector3(0, 3, 8).applyQuaternion(player.quaternion).add(player.position), dt * 4);
-  camera.lookAt(player.position.clone().add(new THREE.Vector3(0, 0, -10).applyQuaternion(player.quaternion)));
+  // 相机跟随 - 计算理想位置（飞机后方上方）
+  const idealOffset = new THREE.Vector3(0, 4, 10);
+  idealOffset.applyQuaternion(player.quaternion);
+  idealOffset.add(player.position);
+  
+  const lookAtPos = new THREE.Vector3(0, 0, -20);
+  lookAtPos.applyQuaternion(player.quaternion);
+  lookAtPos.add(player.position);
+  
+  camera.position.lerp(idealOffset, dt * 3);
+  camera.lookAt(lookAtPos);
   
   // HUD
   document.getElementById('spdV').textContent = Math.round(pd.speed);
