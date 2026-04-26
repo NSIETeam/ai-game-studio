@@ -14,6 +14,7 @@
           <a href="#pipeline">{{ lang === 'en' ? 'Pipeline' : '流水线' }}</a>
           <a href="#team">{{ lang === 'en' ? 'Workflow' : '流程' }}</a>
           <a href="#works">{{ lang === 'en' ? 'Works' : '作品' }}</a>
+          <a href="#skill-pack">{{ lang === 'en' ? 'Skill Pack' : 'Skill 包' }}</a>
           <a href="#about">{{ lang === 'en' ? 'About' : '关于' }}</a>
           <a href="#benchmark">{{ lang === 'en' ? 'Benchmark' : '对比' }}</a>
         </div>
@@ -42,12 +43,20 @@
           6 个专业 AI Agent——策划、原画、架构、编码、测试、发布。自动完成设计、开发、审查、测试和上线。你只需描述想法。
         </p>
         <div class="hero-actions animate-fade-rise-delay-2">
+          <button class="liquid-glass-btn" @click="openGame(BASE + '/games/zero-fighter/')">
+            {{ lang === 'en' ? 'Play Zero Fighter Demo' : '试玩零式空战 Demo' }}
+            <span style="font-size: 18px;">▶</span>
+          </button>
           <button class="liquid-glass-btn" @click="scrollTo('#pipeline')">
             {{ lang === 'en' ? 'Meet the Team' : '认识团队' }}
             <span style="font-size: 18px;">→</span>
           </button>
           <button class="liquid-glass-btn" @click="scrollTo('#works')">
-            {{ lang === 'en' ? 'Play Demos' : '试玩 Demo' }}
+            {{ lang === 'en' ? 'Play More Demos' : '更多 Demo' }}
+          </button>
+          <button class="liquid-glass-btn" style="background: linear-gradient(135deg, #56f2a5, #38e89f); color: #000;" @click="downloadSkillPack">
+            {{ lang === 'en' ? 'Download Agent Legion Skill Pack' : '下载 Agent 军团 Skill 包' }}
+            <span style="font-size: 16px;">⬇</span>
           </button>
         </div>
         <div class="hero-input-area animate-fade-rise-delay-3">
@@ -56,6 +65,24 @@
               :placeholder="lang === 'en' ? 'e.g., a pixel-art platformer where you play as a magical cat...' : '例如：一个像素风平台跳跃游戏...'"
               @keyup.enter="handleIdea"/>
             <button @click="handleIdea">{{ lang === 'en' ? 'Generate →' : '生成 →' }}</button>
+          </div>
+        </div>
+        
+        <!-- Hero Demo Embedding -->
+        <div class="hero-demo animate-fade-rise-delay-4">
+          <div class="demo-header">
+            <span>🎮</span>
+            <span>{{ lang === 'en' ? 'Play the Demo Directly' : '直接试玩 Demo' }}</span>
+          </div>
+          <div class="demo-frame liquid-glass">
+            <iframe :src="BASE + '/games/zero-fighter/'" title="Zero Fighter Demo" frameborder="0" allowfullscreen></iframe>
+          </div>
+          <div class="demo-controls">
+            <span class="control-label">{{ lang === 'en' ? 'Controls' : '操作说明' }}:</span>
+            <span class="control-item">W/S {{ lang === 'en' ? 'Pitch' : '俯仰' }}</span>
+            <span class="control-item">A/D {{ lang === 'en' ? 'Roll' : '滚转' }}</span>
+            <span class="control-item">Shift {{ lang === 'en' ? 'Boost' : '加速' }}</span>
+            <span class="control-item">Space {{ lang === 'en' ? 'Fire' : '射击' }}</span>
           </div>
         </div>
       </div>
@@ -129,6 +156,36 @@
               <a :href="work.url" target="_blank" class="liquid-glass-btn work-btn" @click.prevent="openGame(work.url)"><span>▶</span> {{ lang === 'en' ? 'Play Demo' : '试玩演示' }}</a>
               <span class="work-input">{{ lang === 'en' ? 'Prompt:' : '提示词：' }} <em>{{ work.prompt }}</em></span>
             </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-sm" id="skill-pack">
+      <div class="container">
+        <div class="pipeline-header reveal">
+          <h2 v-if="lang === 'en'">Download <span class="gradient-text">Agent Legion Skill Pack</span></h2>
+          <h2 v-else>下载 <span class="gradient-text">Agent 军团 Skill 包</span></h2>
+          <p v-if="lang === 'en'">Get all 6 specialized AI agents as EasyClaw skills. Install once, use forever.</p>
+          <p v-else>获取 6 个专业 AI Agent 的 EasyClaw Skill 包。一次安装，永久使用。</p>
+        </div>
+        <div class="caps-grid" style="max-width: 800px; margin: 0 auto;">
+          <div class="cap-item reveal" v-for="(skill, i) in skillPackSkills" :key="skill.name" :style="{ transitionDelay: `${i * 0.06}s` }">
+            <div class="cap-dot" :style="{ background: skill.color }"></div>
+            <div class="cap-text">
+              <strong>{{ lang === 'en' ? skill.name : skill.cnName }}</strong>
+              <br>
+              <small>{{ lang === 'en' ? skill.desc : skill.cnDesc }}</small>
+            </div>
+          </div>
+        </div>
+        <div style="text-align: center; margin-top: 32px;" class="reveal">
+          <button class="liquid-glass-btn" style="background: linear-gradient(135deg, #56f2a5, #38e89f); color: #000;" @click="downloadSkillPack">
+            {{ lang === 'en' ? 'Download Agent Legion Skill Pack' : '下载 Agent 军团 Skill 包' }}
+            <span style="font-size: 16px;">⬇</span>
+          </button>
+          <div style="margin-top: 12px; font-size: 13px; color: hsl(var(--muted-foreground));">
+            {{ lang === 'en' ? 'File size: ~250KB' : '文件大小：~250KB' }}
           </div>
         </div>
       </div>
@@ -216,6 +273,7 @@ export default {
   name: 'App',
   data() {
     return {
+      BASE,
       scrolled: false, lang: 'en', ideaInput: '', activeWorkflow: 'feature',
       agents: [
         { name: 'Game Designer', cnName: '游戏策划师', icon: '🎪', desc: 'Defines mechanics, rules, and player experience from your prompt', cnDesc: '从你的提示词中定义玩法、规则和玩家体验', bg: 'rgba(168,130,255,0.12)', ioEn: 'Idea prompt → PRD + user stories', ioCn: '创意描述 → PRD + 用户故事' },
@@ -252,10 +310,19 @@ export default {
         ],
       },
       realWorks: [
+        { icon: '✦', title: 'Zero Fighter', tag: 'Featured', desc: '3D Krigger-style process shaded dogfighter', cnDesc: 'Krigger 风格 3D 空战游戏', url: BASE + '/games/zero-fighter/', prompt: '模仿 Krigger 游戏，做一个 3D 空战游戏，用零式战斗机' },
         { icon: 'T-Rex', title: 'Dino Run', tag: 'Demo', desc: 'Endless runner with a cute T-Rex', cnDesc: '萌系小恐龙无限跑酷', url: BASE + '/games/dino-run/', prompt: '做一个用空格跳跃的小恐龙跑酷游戏' },
         { icon: 'Rocket', title: 'Space Shooter', tag: 'Demo', desc: 'Top-down space shooter', cnDesc: '俯视角太空射击', url: BASE + '/games/space-shooter/', prompt: '帮我做一个太空射击游戏' },
         { icon: 'Bricks', title: 'Star Shatter', tag: 'Demo', desc: 'Neon cyberpunk Breakout', cnDesc: '霓虹赛博朋克打砖块', url: BASE + '/games/breakout/', prompt: '做一个打方块 Breakout 游戏' },
         { icon: 'Pick', title: 'MiniCraft 3D', tag: 'New', desc: 'First-person sandbox in Three.js', cnDesc: 'Three.js 第一人称沙盒', url: BASE + '/games/minecraft-3d/', prompt: '一个超小的 3D 网页版 Minecraft' },
+      ],
+      skillPackSkills: [
+        { name: 'Planner Agent', cnName: '游戏策划师', desc: 'Defines mechanics, rules, and player experience', cnDesc: '定义玩法、规则和玩家体验', color: 'rgba(168,130,255,0.6)' },
+        { name: 'Level Designer Agent', cnName: '关卡设计师', desc: 'Creates level structures, enemy waves, and difficulty curves', cnDesc: '创建关卡结构、敌人波次和难度曲线', color: 'rgba(255,130,180,0.6)' },
+        { name: 'Game Coder Agent', cnName: '游戏工程师', desc: 'Writes clean, performant game code', cnDesc: '编写干净高性能的游戏代码', color: 'rgba(130,200,255,0.6)' },
+        { name: 'Artist Agent', cnName: '美术师', desc: 'Creates visual assets and defines art style', cnDesc: '创建视觉资源和定义美术风格', color: 'rgba(100,220,180,0.6)' },
+        { name: 'Tester Agent', cnName: '测试师', desc: 'Finds bugs, tests balance, and suggests improvements', cnDesc: '发现 bug、测试平衡性和提出改进建议', color: 'rgba(255,200,80,0.6)' },
+        { name: 'Director Agent', cnName: '总监 Agent', desc: 'Coordinates all agents and delivers final output', cnDesc: '协调所有 Agent 并交付最终输出', color: 'rgba(255,130,130,0.6)' },
       ],
       capabilities: [
         { text: 'Single-sentence game concept → fully playable web game', cnText: '一句话游戏概念 → 完整可玩的网页游戏', color: 'var(--pink)' },
@@ -300,6 +367,19 @@ export default {
       if (!idea) { this.scrollTo('#cta'); return }
       this.ideaInput = this.lang === 'en' ? 'Pipeline building...' : '流水线构建中...'
       setTimeout(() => { this.ideaInput = '' }, 2000)
+    },
+    downloadSkillPack() {
+      const link = document.createElement('a')
+      link.href = BASE + '/downloads/agent-legion-skill-pack.zip'
+      link.download = 'agent-legion-skill-pack.zip'
+      link.click()
+    },
+    downloadSkillPack() {
+      const link = document.createElement('a')
+      link.href = BASE + '/downloads/agent-legion-skill-pack.zip'
+      link.download = 'agent-legion-skill-pack.zip'
+      link.click()
+      this.$nextTick(() => { link.remove() })
     }
   }
 }
@@ -333,4 +413,17 @@ export default {
 .bm-metric { color: hsl(var(--foreground)); font-weight: 500; }
 .bm-trad { color: hsla(0,80%,70%,.7); }
 .bm-ai { color: hsla(168,80%,60%,.9); font-weight: 500; }
+
+/* Hero Demo */
+.hero-demo { margin-top: 36px; padding: 12px; border-radius: var(--radius-lg); background: rgba(255,255,255,.02); backdrop-filter: blur(4px); box-shadow: inset 0 1px 1px rgba(255,255,255,.08); }
+.demo-header { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; margin-bottom: 12px; }
+.demo-frame { border-radius: var(--radius-md); overflow: hidden; background: #000; aspect-ratio: 16 / 9; }
+.demo-frame iframe { width: 100%; height: 100%; border: 0; }
+.demo-controls { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; font-size: 12px; color: hsl(var(--muted-foreground)); }
+.control-label { font-weight: 500; color: hsl(var(--foreground)); }
+.control-item { padding: 4px 10px; border-radius: 8px; background: rgba(255,255,255,.04); }
+@media (max-width: 768px) {
+  .hero-demo { margin-top: 24px; padding: 8px; }
+  .demo-controls { gap: 8px; font-size: 11px; }
+}
 </style>

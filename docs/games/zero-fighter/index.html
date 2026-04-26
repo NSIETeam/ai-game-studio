@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>零式 - 3D 空战</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}body{overflow:hidden;background:#000;font-family:sans-serif;cursor:crosshair}canvas{display:block;width:100vw;height:100vh}
+#ui{position:fixed;inset:0;pointer-events:none;z-index:10}#hud{position:absolute;top:20px;left:20px;color:#fff;font:13px monospace}
+#hud .r{margin:3px 0}#hud .l{color:#666}#hud .v{color:#8f8}#crosshair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:36px;height:36px}
+#crosshair::before,#crosshair::after{content:'';position:absolute;background:rgba(255,255,255,.3)}#crosshair::before{width:1px;height:100%;left:50%}#crosshair::after{width:100%;height:1px;top:50%}
+#menu,#levelSelect,#result{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.92);z-index:100;pointer-events:all}
+#menu h1{font-size:56px;color:#fff;font-weight:200;letter-spacing:16px;margin-bottom:10px;text-shadow:0 0 40px rgba(255,255,255,.1)}#menu .sub{color:#555;font-size:11px;letter-spacing:5px;margin-bottom:35px}
+.btn{background:transparent;border:1px solid #444;color:#aaa;padding:10px 48px;margin:6px;font:15px sans-serif;cursor:pointer;letter-spacing:3px;transition:.2s}
+.btn:hover{border-color:#fff;color:#fff;background:rgba(255,255,255,.04)}#levelSelect h2,#result h2{color:#fff;font-weight:300;letter-spacing:6px;margin-bottom:25px}
+.card{background:transparent;border:1px solid #333;color:#888;padding:12px 40px;margin:5px;font:14px sans-serif;cursor:pointer;width:320px;text-align:center;transition:.2s;letter-spacing:2px}
+.card:hover{border-color:#fff;color:#fff;background:rgba(255,255,255,.03)}.info{font-size:11px;color:#555;margin-top:3px}
+#result .stat{color:#888;font-size:14px;margin:5px}#result .stat span{color:#fff}
+#toast{position:absolute;top:20%;left:50%;transform:translateX(-50%);color:#fff;font:24px/1 sans-serif;letter-spacing:4px;text-shadow:0 0 30px rgba(255,255,255,.2);opacity:0;transition:.4s}
+.hint{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:#333;font:10px sans-serif;letter-spacing:2px}
+</style>
+</head><body>
+<div id="menu"><h1>零&emsp;式</h1><div class="sub">⚡ PROCESS SHADED DOGFIGHT ⚡</div>
+<button class="btn" onclick="showLevels()">NEW GAME</button>
+<div class="sub" style="margin-top:30px;color:#333">W/S 俯仰 · A/D 滚转 · Shift 加速 · Ctrl 减速 · 空格 射击 · ESC 暂停</div></div>
+
+<div id="levelSelect"><h2>◆ SELECT MISSION ◆</h2>
+<div class="card" onclick="start(0)">TRAINING · 热身<span class="info">10 架教练机 · 无威胁</span></div>
+<div class="card" onclick="start(1)">DAWN PATROL · 黎明<span class="info">12 架 · 侦察巡逻</span></div>
+<div class="card" onclick="start(2)">FORMATION · 编队<span class="info">18 架 · 敌编队防御</span></div>
+<div class="card" onclick="start(3)">STRAIT · 海峡<span class="info">24 架 · 精英护卫队</span></div>
+<div class="card" onclick="start(4)">FINAL BATTLE · 决战<span class="info">30 架 · 王牌中队</span></div></div>
+
+<div id="result"><h2 id="rTitle">◆ MISSION COMPLETE ◆</h2>
+<div class="stat">击落：<span id="rKills">0</span></div><div class="stat">命中：<span id="rAcc">0%</span></div><div class="stat">评价：<span id="rRank">-</span></div><br>
+<button class="btn" onclick="retry()">RETRY</button><button class="btn" onclick="back()">MENU</button></div>
+
+<div id="ui" style="display:none"><div id="hud">
+<div class="r"><span class="l">HP </span><span class="v" id="hpV">100</span></div>
+<div class="r"><span class="l">SPD </span><span class="v" id="spdV">0</span></div>
+<div class="r"><span class="l">ALT </span><span class="v" id="altV">0</span></div>
+<div class="r"><span class="l">KILLS </span><span class="v" id="killV">0 / <span id="totV">0</span></span></div>
+<div class="r" style="margin-top:10px"><span class="l" id="warn"></span></div></div>
+<div id="crosshair"></div><div id="toast"></div><div class="hint">W/S PITCH · A/D ROLL · SHIFT BOOST · CTRL BRAKE · SPACE FIRE · ESC PAUSE</div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ==================== 配置 ====================
+const LEVELS=[
+  {n:'TRAINING',total:10,delay:4,type:'trainer'},
+  {n:'DAWN PATROL',total:12,delay:3.5,type:'fighter'},
+  {n:'FORMATION',total:18,delay:3,type:'fighter'},
+  {n:'STRAIT',total:24,delay:2.5,type:'elite'},
+  {n:'FINAL BATTLE',total:30,delay:2,type:'ace'}
+];
+
+// ==================== 状态 ====================
+let scene,camera,renderer;
+let player=null;
+let enemies=[],bullets=[],particles=[];
+let gameState='menu',currentLevel=0,spawnedCount=0,kills=0,hp=100;
+let shotsFired=0,shotsHit=0,spawnTimer=0,paused=false;
+let input={keys:{},mouseX:0,mouseY:0};
+let lastTime=0;
+
+// ==================== 飞机模型构建 ====================
+function createFighterModel(fuseColor=0xbb8855,edgeColor=0xccaaff){
+  const group=new THREE.Group();
+  
+  // 机身 - 使用 ConeGeometry 做流线型
+  const bodyGeo=new THREE.CylinderGeometry(0.12,0.55,2.0,8,1);
+  const bodyMat=new THREE.MeshStandardMaterial({color:fuseColor,roughness:0.5,metalness:0.3,flatShading:true});
+  const body=new THREE.Mesh(bodyGeo,bodyMat);
+  body.rotation.x=Math.PI/2;
+  body.position.z=-0.35;
+  body.castShadow=true;
+  group.add(body);
+  
+  // 机头锥
+  const noseGeo=new THREE.ConeGeometry(0.35,0.5,8);
+  const noseMat=new THREE.MeshStandardMaterial({color:0xcca880,roughness:0.5,metalness:0.2,flatShading:true});
+  const nose=new THREE.Mesh(noseGeo,noseMat);
+  nose.rotation.x=-Math.PI/2;
+  nose.position.z=0.75;
+  nose.castShadow=true;
+  group.add(nose);
+  
+  // 座舱罩
+  const cockpitGeo=new THREE.SphereGeometry(0.18,6,4);
+  const cockpitMat=new THREE.MeshStandardMaterial({color:0x88ccff,roughness:0.1,metalness:0.8,transparent:true,opacity:0.5,flatShading:true});
+  const cockpit=new THREE.Mesh(cockpitGeo,cockpitMat);
+  cockpit.position.set(0,0.22,0.05);
+  cockpit.scale.set(1,0.5,1.2);
+  group.add(cockpit);
+  
+  // 左机翼 (独立 geometry)
+  const leftWingShape=new THREE.Shape();
+  leftWingShape.moveTo(-0.5,0);
+  leftWingShape.lineTo(-2.3,0);
+  leftWingShape.lineTo(-2.5,-0.1);
+  leftWingShape.lineTo(-1.7,-0.2);
+  leftWingShape.lineTo(-0.5,-0.15);
+  leftWingShape.lineTo(-0.5,0);
+  const leftWingGeo=new THREE.ExtrudeGeometry(leftWingShape,{depth:0.04,bevelEnabled:false});
+  const wingMat=new THREE.MeshStandardMaterial({color:fuseColor,roughness:0.5,metalness:0.2,flatShading:true});
+  const leftWing=new THREE.Mesh(leftWingGeo,wingMat);
+  leftWing.position.set(0,0.02,0.08);
+  leftWing.rotation.x=-0.05;
+  leftWing.castShadow=true;
+  group.add(leftWing);
+  
+  // 右机翼 (独立 geometry - 镜像 shape)
+  const rightWingShape=new THREE.Shape();
+  rightWingShape.moveTo(0.5,0);
+  rightWingShape.lineTo(2.3,0);
+  rightWingShape.lineTo(2.5,-0.1);
+  rightWingShape.lineTo(1.7,-0.2);
+  rightWingShape.lineTo(0.5,-0.15);
+  rightWingShape.lineTo(0.5,0);
+  const rightWingGeo=new THREE.ExtrudeGeometry(rightWingShape,{depth:0.04,bevelEnabled:false});
+  const rightWing=new THREE.Mesh(rightWingGeo,wingMat);
+  rightWing.position.set(0,0.02,0.08);
+  rightWing.rotation.x=-0.05;
+  rightWing.castShadow=true;
+  group.add(rightWing);
+  
+  // 水平尾翼
+  const hTailGeo=new THREE.BoxGeometry(1.1,0.02,0.28);
+  const tailMat=new THREE.MeshStandardMaterial({color:fuseColor,roughness:0.5,metalness:0.2,flatShading:true});
+  const hTail=new THREE.Mesh(hTailGeo,tailMat);
+  hTail.position.set(0,0.02,-1.2);
+  hTail.castShadow=true;
+  group.add(hTail);
+  
+  // 垂直尾翼
+  const vTailShape=new THREE.Shape();
+  vTailShape.moveTo(0,0);
+  vTailShape.lineTo(0.45,0);
+  vTailShape.lineTo(0.5,0.55);
+  vTailShape.lineTo(0.2,0.65);
+  vTailShape.lineTo(0,0.35);
+  vTailShape.lineTo(0,0);
+  const vTailGeo=new THREE.ExtrudeGeometry(vTailShape,{depth:0.025,bevelEnabled:false});
+  const vTail=new THREE.Mesh(vTailGeo,tailMat);
+  vTail.position.set(-0.025,0.28,-1.2);
+  vTail.castShadow=true;
+  group.add(vTail);
+  
+  // 螺旋桨组
+  const propGroup=new THREE.Group();
+  const bladeGeo=new THREE.BoxGeometry(0.035,0.38,0.012);
+  const bladeMat=new THREE.MeshStandardMaterial({color:0x2a2a2a,roughness:0.5,metalness:0.4,flatShading:true});
+  for(let i=0;i<3;i++){
+    const blade=new THREE.Mesh(bladeGeo,bladeMat);
+    blade.position.set(0,0,0.85);
+    blade.rotation.z=(i/3)*Math.PI*2;
+    propGroup.add(blade);
+  }
+  const spinnerGeo=new THREE.SphereGeometry(0.12,6,4);
+  const spinnerMat=new THREE.MeshStandardMaterial({color:0x884444,roughness:0.4,metalness:0.5,flatShading:true});
+  const spinner=new THREE.Mesh(spinnerGeo,spinnerMat);
+  spinner.position.z=0.85;
+  spinner.scale.set(1,1,0.6);
+  propGroup.add(spinner);
+  group.add(propGroup);
+  group.userData.propeller=propGroup;
+  
+  // === 线框轮廓叠加 ===
+  const wireGroup=new THREE.Group();
+  const wireMat=new THREE.LineBasicMaterial({color:edgeColor,transparent:true,opacity:0.25});
+  
+  // 机身线框
+  const bodyWire=new THREE.LineSegments(new THREE.EdgesGeometry(bodyGeo),wireMat.clone());
+  bodyWire.rotation.x=Math.PI/2;
+  bodyWire.position.z=-0.35;
+  wireGroup.add(bodyWire);
+  
+  // 机头线框
+  const noseWire=new THREE.LineSegments(new THREE.EdgesGeometry(noseGeo),wireMat.clone());
+  noseWire.rotation.x=-Math.PI/2;
+  noseWire.position.z=0.75;
+  wireGroup.add(noseWire);
+  
+  // 左翼线框
+  const leftWingWire=new THREE.LineSegments(new THREE.EdgesGeometry(leftWingGeo),wireMat.clone());
+  leftWingWire.position.copy(leftWing.position);
+  leftWingWire.rotation.copy(leftWing.rotation);
+  wireGroup.add(leftWingWire);
+  
+  // 右翼线框
+  const rightWingWire=new THREE.LineSegments(new THREE.EdgesGeometry(rightWingGeo),wireMat.clone());
+  rightWingWire.position.copy(rightWing.position);
+  rightWingWire.rotation.copy(rightWing.rotation);
+  wireGroup.add(rightWingWire);
+  
+  // 尾翼线框
+  const hTailWire=new THREE.LineSegments(new THREE.EdgesGeometry(hTailGeo),wireMat.clone());
+  hTailWire.position.copy(hTail.position);
+  wireGroup.add(hTailWire);
+  
+  group.add(wireGroup);
+  group.userData.wires=wireGroup;
+  
+  // 统一缩放
+  group.scale.set(0.75,0.75,0.75);
+  return group;
+}
+
+// ==================== 初始化场景 ====================
+function initScene(){
+  scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x05050a);
+  scene.fog=new THREE.Fog(0x05050a,50,140);
+  
+  camera=new THREE.PerspectiveCamera(70,window.innerWidth/window.innerHeight,0.1,300);
+  camera.position.set(0,3,8);
+  
+  renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+  renderer.setSize(window.innerWidth,window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.5));
+  renderer.shadowMap.enabled=true;
+  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=1.0;
+  document.body.insertBefore(renderer.domElement,document.body.firstChild);
+  
+  // 灯光
+  const ambient=new THREE.AmbientLight(0x223355,0.4);
+  scene.add(ambient);
+  
+  const sun=new THREE.DirectionalLight(0xffeedd,1.0);
+  sun.position.set(40,50,30);
+  sun.castShadow=true;
+  sun.shadow.mapSize.set(1024,1024);
+  sun.shadow.camera.near=10;
+  sun.shadow.camera.far=150;
+  sun.shadow.camera.left=-50;
+  sun.shadow.camera.right=50;
+  sun.shadow.camera.top=50;
+  sun.shadow.camera.bottom=-50;
+  scene.add(sun);
+  
+  const fill=new THREE.DirectionalLight(0x4466aa,0.35);
+  fill.position.set(-30,20,-40);
+  scene.add(fill);
+  
+  const hemi=new THREE.HemisphereLight(0x4466aa,0x111122,0.3);
+  scene.add(hemi);
+  
+  // 事件
+  window.addEventListener('resize',onResize,false);
+  document.addEventListener('keydown',onKeyDown,false);
+  document.addEventListener('keyup',onKeyUp,false);
+  document.addEventListener('mousemove',onMouseMove,false);
+  renderer.domElement.addEventListener('click',onClick,false);
+  
+  // 环境
+  createEnvironment();
+}
+
+function createEnvironment(){
+  // 星空
+  const starGeo=new THREE.BufferGeometry();
+  const starCount=2500;
+  const positions=new Float32Array(starCount*3);
+  const colors=new Float32Array(starCount*3);
+  for(let i=0;i<starCount;i++){
+    const theta=Math.random()*Math.PI*2;
+    const phi=Math.acos(Math.random()*0.6+0.4);
+    const radius=80+Math.random()*100;
+    positions[i*3]=radius*Math.sin(phi)*Math.cos(theta);
+    positions[i*3+1]=Math.abs(radius*Math.cos(phi));
+    positions[i*3+2]=radius*Math.sin(phi)*Math.sin(theta);
+    const brightness=0.4+Math.random()*0.6;
+    colors[i*3]=brightness*0.7;
+    colors[i*3+1]=brightness*0.8;
+    colors[i*3+2]=brightness;
+  }
+  starGeo.setAttribute('position',new THREE.BufferAttribute(positions,3));
+  starGeo.setAttribute('color',new THREE.BufferAttribute(colors,3));
+  const stars=new THREE.Points(starGeo,new THREE.PointsMaterial({size:0.3,vertexColors:true,transparent:true,opacity:0.8}));
+  scene.add(stars);
+  
+  // 海洋
+  const oceanGeo=new THREE.PlaneGeometry(400,400,50,50);
+  const oceanMat=new THREE.MeshStandardMaterial({
+    color:0x06061a,
+    roughness:0.15,
+    metalness:0.8,
+    transparent:true,
+    opacity:0.7,
+    flatShading:true,
+    side:THREE.DoubleSide
+  });
+  const ocean=new THREE.Mesh(oceanGeo,oceanMat);
+  ocean.rotation.x=-Math.PI/2;
+  ocean.position.y=-8;
+  ocean.receiveShadow=true;
+  scene.add(ocean);
+  
+  // 海洋线框
+  const oceanWire=new THREE.LineSegments(
+    new THREE.EdgesGeometry(oceanGeo),
+    new THREE.LineBasicMaterial({color:0x113388,transparent:true,opacity:0.06})
+  );
+  oceanWire.rotation.x=-Math.PI/2;
+  oceanWire.position.y=-8;
+  scene.add(oceanWire);
+  
+  // 云层
+  for(let i=0;i<40;i++){
+    const size=3+Math.random()*10;
+    const cloudGeo=new THREE.SphereGeometry(size,5,4);
+    const cloudMat=new THREE.MeshStandardMaterial({
+      color:0x1a1a3a,
+      roughness:0.9,
+      metalness:0,
+      transparent:true,
+      opacity:0.08+Math.random()*0.08,
+      flatShading:true,
+      wireframe:Math.random()>0.6
+    });
+    const cloud=new THREE.Mesh(cloudGeo,cloudMat);
+    cloud.position.set(
+      (Math.random()-0.5)*220,
+      5+Math.random()*35,
+      (Math.random()-0.5)*220
+    );
+    cloud.scale.set(1,0.2+Math.random()*0.2,1);
+    scene.add(cloud);
+  }
+}
+
+function onResize(){
+  camera.aspect=window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth,window.innerHeight);
+}
+
+function onKeyDown(e){
+  input.keys[e.key]=true;
+  if(e.key==='Escape')togglePause();
+}
+
+function onKeyUp(e){input.keys[e.key]=false;}
+
+function onMouseMove(e){
+  input.mouseX=(e.clientX/window.innerWidth-0.5)*2;
+  input.mouseY=-(e.clientY/window.innerHeight-0.5)*2;
+}
+
+function onClick(){
+  if(gameState==='playing'&&!paused){
+    renderer.domElement.requestPointerLock();
+  }
+}
+
+// ==================== 子弹系统 ====================
+function spawnBullet(position,direction,owner){
+  const bulletGeo=new THREE.SphereGeometry(0.05,4,4);
+  const bulletMat=new THREE.MeshStandardMaterial({
+    color:owner==='player'?0xffcc44:0xff4444,
+    emissive:owner==='player'?0xff8800:0xff0000,
+    emissiveIntensity:2.5,
+    flatShading:true
+  });
+  const bullet=new THREE.Mesh(bulletGeo,bulletMat);
+  bullet.position.copy(position);
+  bullet.userData={
+    direction:direction.clone().normalize(),
+    speed:owner==='player'?100:55,
+    lifetime:owner==='player'?2.5:3.5,
+    owner:owner
+  };
+  
+  // 尾迹
+  const trailGeo=new THREE.BufferGeometry();
+  const trailPos=new Float32Array(6);
+  const dir=direction.clone().normalize();
+  trailPos[0]=position.x;trailPos[1]=position.y;trailPos[2]=position.z;
+  trailPos[3]=position.x-dir.x*0.4;trailPos[4]=position.y-dir.y*0.4;trailPos[5]=position.z-dir.z*0.4;
+  trailGeo.setAttribute('position',new THREE.BufferAttribute(trailPos,3));
+  const trailMat=new THREE.LineBasicMaterial({
+    color:owner==='player'?0xffaa44:0xff4444,
+    transparent:true,
+    opacity:0.5
+  });
+  const trail=new THREE.Line(trailGeo,trailMat);
+  bullet.add(trail);
+  
+  scene.add(bullet);
+  bullets.push(bullet);
+  if(owner==='player')shotsFired++;
+  return bullet;
+}
+
+// ==================== 敌机系统 ====================
+function spawnEnemy(type){
+  const colorMap={
+    trainer:0x667788,
+    fighter:0x886644,
+    elite:0x884444,
+    ace:0xaa2222
+  };
+  const edgeMap={
+    trainer:0x446688,
+    fighter:0x665544,
+    elite:0x664444,
+    ace:0xff4466
+  };
+  
+  // 生成位置
+  let spawnPos;
+  if(player){
+    const forward=new THREE.Vector3(0,0,-1).applyQuaternion(player.quaternion);
+    const right=new THREE.Vector3(1,0,0).applyQuaternion(player.quaternion);
+    const up=new THREE.Vector3(0,1,0).applyQuaternion(player.quaternion);
+    const distance=25+Math.random()*25;
+    spawnPos=player.position.clone()
+      .add(forward.clone().multiplyScalar(-distance))
+      .add(right.clone().multiplyScalar((Math.random()-0.5)*50))
+      .add(up.clone().multiplyScalar((Math.random()-0.5)*20));
+  }else{
+    spawnPos=new THREE.Vector3((Math.random()-0.5)*50,5+Math.random()*15,-40-Math.random()*30);
+  }
+  
+  const model=createFighterModel(colorMap[type]||0x886644,edgeMap[type]||0x446688);
+  model.position.copy(spawnPos);
+  if(player)model.lookAt(player.position);
+  model.scale.set(1,1,1);
+  
+  const behavior={
+    trainer:{speed:14,turnRate:0.7,fireRate:12,aggro:0.25,health:1},
+    fighter:{speed:18,turnRate:1.1,fireRate:7,aggro:0.5,health:2},
+    elite:{speed:21,turnRate:1.4,fireRate:4.5,aggro:0.7,health:3},
+    ace:{speed:24,turnRate:1.7,fireRate:3,aggro:0.9,health:4}
+  }[type]||{speed:18,turnRate:1.1,fireRate:7,aggro:0.5,health:2};
+  
+  // 保留 propeller 引用
+  const propRef=model.userData.propeller;
+  model.userData={
+    alive:true,
+    health:behavior.health,
+    speed:behavior.speed+Math.random()*3,
+    turnRate:behavior.turnRate,
+    fireRate:behavior.fireRate,
+    aggro:behavior.aggro,
+    fireTimer:0,
+    type:type,
+    wobblePhase:Math.random()*Math.PI*2,
+    targetOffset:new THREE.Vector3(
+      (Math.random()-0.5)*4,
+      (Math.random()-0.5)*3,
+      -3-Math.random()*5
+    ),
+    propeller:propRef
+  };
+  
+  scene.add(model);
+  enemies.push(model);
+  spawnedCount++;
+  return model;
+}
+
+function enemyFire(enemy){
+  if(!player)return;
+  const direction=new THREE.Vector3().subVectors(player.position,enemy.position).normalize();
+  const spawnPos=enemy.position.clone().add(direction.multiplyScalar(1.5));
+  spawnBullet(spawnPos,direction,'enemy');
+}
+
+// ==================== 爆炸特效 ====================
+function createExplosion(position,color,count){
+  for(let i=0;i<count;i++){
+    const size=0.06+Math.random()*0.18;
+    const geo=new THREE.BoxGeometry(size,size,size);
+    const mat=new THREE.MeshStandardMaterial({
+      color:color,
+      emissive:color,
+      emissiveIntensity:2,
+      transparent:true,
+      opacity:1,
+      flatShading:true
+    });
+    const particle=new THREE.Mesh(geo,mat);
+    particle.position.copy(position);
+    particle.position.x+=(Math.random()-0.5)*0.8;
+    particle.position.y+=(Math.random()-0.5)*0.8;
+    particle.position.z+=(Math.random()-0.5)*0.8;
+    
+    const velocity=new THREE.Vector3(
+      (Math.random()-0.5)*12,
+      (Math.random()-0.5)*12,
+      (Math.random()-0.5)*12
+    );
+    
+    scene.add(particle);
+    particles.push({
+      mesh:particle,
+      velocity:velocity,
+      lifetime:0.5+Math.random()*0.6,
+      maxLifetime:0.5+Math.random()*0.6
+    });
+  }
+}
+
+// ==================== 玩家飞机 ====================
+function createPlayer(){
+  const model=createFighterModel(0xbb8855,0xccaaff);
+  model.position.set(0,6,15);
+  // 保留 createFighterModel 设置的 propeller 引用
+  const propRef=model.userData.propeller;
+  model.userData={
+    speed:18,
+    maxSpeed:42,
+    minSpeed:10,
+    pitch:0,
+    yaw:0,
+    roll:0,
+    fireTimer:0,
+    fireRate:0.1,
+    invincible:0,
+    propeller:propRef
+  };
+  scene.add(model);
+  return model;
+}
+
+function resetPlayer(){
+  if(player){
+    player.position.set(0,6,15);
+    player.quaternion.identity();
+    // 保留 propeller 引用
+    const propRef=player.userData.propeller;
+    player.userData={
+      speed:18,
+      maxSpeed:42,
+      minSpeed:10,
+      pitch:0,
+      yaw:0,
+      roll:0,
+      fireTimer:0,
+      fireRate:0.1,
+      invincible:0,
+      propeller:propRef
+    };
+    if(propRef){
+      propRef.rotation.z=0;
+    }
+  }
+}
+
+// ==================== 游戏逻辑更新 ====================
+function updateGame(deltaTime){
+  if(gameState!=='playing'||paused||!player)return;
+  
+  const pd=player.userData;
+  
+  // 速度控制
+  if(input.keys['Shift']){
+    pd.speed=Math.min(pd.speed+deltaTime*25,pd.maxSpeed);
+  }else if(input.keys['Control']||input.keys['ControlLeft']||input.keys['ControlRight']){
+    pd.speed=Math.max(pd.speed-deltaTime*30,pd.minSpeed);
+  }else{
+    pd.speed+=(20-pd.speed)*deltaTime*0.7;
+  }
+  
+  // 俯仰控制
+  if(input.keys['w']||input.keys['W']||input.keys['ArrowUp']){
+    pd.pitch=Math.min(pd.pitch+deltaTime*4,1);
+  }else if(input.keys['s']||input.keys['S']||input.keys['ArrowDown']){
+    pd.pitch=Math.max(pd.pitch-deltaTime*4,-1);
+  }else{
+    pd.pitch*=0.85;
+  }
+  
+  // 滚转控制
+  if(input.keys['a']||input.keys['A']||input.keys['ArrowLeft']){
+    pd.roll+=deltaTime*4.5;
+  }
+  if(input.keys['d']||input.keys['D']||input.keys['ArrowRight']){
+    pd.roll-=deltaTime*4.5;
+  }
+  pd.roll*=0.95;
+  
+  // 飞行旋转 - 使用局部旋转增量
+  const pitchDelta=(pd.pitch*1.2+input.mouseY*0.6)*deltaTime;
+  const yawDelta=(input.mouseX*0.8+pd.roll*0.4)*deltaTime;
+  const rollDelta=pd.roll*0.5*deltaTime;
+  
+  // 应用局部旋转
+  const pitchQuat=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),pitchDelta);
+  const yawQuat=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),yawDelta);
+  const rollQuat=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1),rollDelta);
+  
+  player.quaternion.multiply(pitchQuat);
+  player.quaternion.multiply(yawQuat);
+  player.quaternion.premultiply(rollQuat);
+  player.quaternion.normalize();
+  
+  // 前进
+  const forward=new THREE.Vector3(0,0,-1).applyQuaternion(player.quaternion);
+  player.position.add(forward.clone().multiplyScalar(pd.speed*deltaTime));
+  
+  // 螺旋桨动画
+  if(player.userData.propeller){
+    player.userData.propeller.rotation.z+=deltaTime*pd.speed*30;
+  }
+  
+  // 射击
+  pd.fireTimer-=deltaTime;
+  if((input.keys[' ']||input.keys['Spacebar'])&&pd.fireTimer<=0){
+    pd.fireTimer=pd.fireRate;
+    const right=new THREE.Vector3(1,0,0).applyQuaternion(player.quaternion);
+    const up=new THREE.Vector3(0,1,0).applyQuaternion(player.quaternion);
+    const gunPos1=player.position.clone()
+      .add(right.clone().multiplyScalar(-0.9))
+      .add(up.clone().multiplyScalar(0.1))
+      .add(forward.clone().multiplyScalar(0.9));
+    const gunPos2=player.position.clone()
+      .add(right.clone().multiplyScalar(0.9))
+      .add(up.clone().multiplyScalar(0.1))
+      .add(forward.clone().multiplyScalar(0.9));
+    spawnBullet(gunPos1,forward,'player');
+    spawnBullet(gunPos2,forward,'player');
+  }
+  
+  // 无敌时间
+  if(pd.invincible>0)pd.invincible-=deltaTime;
+  
+  // 死亡检测
+  if(hp<=0){
+    endGame(false);
+    return;
+  }
+  
+  // 敌机生成
+  const level=LEVELS[currentLevel];
+  if(spawnedCount<level.total){
+    spawnTimer-=deltaTime;
+    if(spawnTimer<=0){
+      spawnTimer=level.delay;
+      let type=level.type;
+      if(level.type==='elite'&&Math.random()>0.65)type='fighter';
+      if(level.type==='ace'){
+        const r=Math.random();
+        if(r>0.55)type='fighter';
+        else if(r>0.25)type='elite';
+      }
+      spawnEnemy(type);
+    }
+  }
+  
+  // 敌机 AI 更新
+  for(let i=enemies.length-1;i>=0;i--){
+    const enemy=enemies[i];
+    if(!enemy.userData.alive)continue;
+    const ud=enemy.userData;
+    
+    // 追踪玩家
+    const targetPos=player.position.clone().add(ud.targetOffset);
+    const direction=new THREE.Vector3().subVectors(targetPos,enemy.position).normalize();
+    const targetQuat=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,-1),direction);
+    enemy.quaternion.slerp(targetQuat,ud.turnRate*deltaTime*0.6);
+    
+    // 前进
+    const enemyForward=new THREE.Vector3(0,0,-1).applyQuaternion(enemy.quaternion);
+    enemy.position.add(enemyForward.clone().multiplyScalar(ud.speed*deltaTime));
+    
+    // 螺旋桨动画
+    if(ud.propeller){
+      ud.propeller.rotation.z+=deltaTime*ud.speed*25;
+    }
+    
+    // 波动
+    ud.wobblePhase+=deltaTime*0.6;
+    enemy.position.y+=Math.sin(ud.wobblePhase)*deltaTime*0.25;
+    
+    // 射击
+    ud.fireTimer-=deltaTime;
+    if(ud.fireTimer<=0&&Math.random()<ud.aggro*0.35){
+      ud.fireTimer=ud.fireRate;
+      const dist=enemy.position.distanceTo(player.position);
+      if(dist<55&&dist>4){
+        enemyFire(enemy);
+      }
+    }
+    
+    // 清理过远敌机
+    if(enemy.position.distanceTo(player.position)>100){
+      scene.remove(enemy);
+      enemies.splice(i,1);
+    }
+  }
+  
+  // 子弹更新
+  for(let i=bullets.length-1;i>=0;i--){
+    const b=bullets[i];
+    b.userData.lifetime-=deltaTime;
+    if(b.userData.lifetime<=0){
+      scene.remove(b);
+      bullets.splice(i,1);
+      continue;
+    }
+    b.position.add(b.userData.direction.clone().multiplyScalar(b.userData.speed*deltaTime));
+    
+    if(b.userData.owner==='player'){
+      // 玩家子弹击中敌机
+      for(let j=enemies.length-1;j>=0;j--){
+        const e=enemies[j];
+        if(!e.userData.alive)continue;
+        if(b.position.distanceTo(e.position)<1.8){
+          hitEnemy(e,b);
+          scene.remove(b);
+          bullets.splice(i,1);
+          shotsHit++;
+          break;
+        }
+      }
+    }else if(b.userData.owner==='enemy'){
+      // 敌机子弹击中玩家
+      if(b.position.distanceTo(player.position)<1.3){
+        if(pd.invincible<=0){
+          hp-=10;
+          pd.invincible=0.6;
+          createExplosion(player.position.clone(),0xff6600,10);
+          updateHUD();
+          if(hp<=0){
+            endGame(false);
+            return;
+          }
+        }
+        // 只有命中时才移除子弹
+        scene.remove(b);
+        bullets.splice(i,1);
+      }
+    }
+  }
+  
+  // 粒子更新
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.lifetime-=deltaTime;
+    if(p.lifetime<=0){
+      scene.remove(p.mesh);
+      particles.splice(i,1);
+      continue;
+    }
+    p.mesh.position.add(p.velocity.clone().multiplyScalar(deltaTime));
+    p.velocity.y-=deltaTime*4;
+    p.mesh.material.opacity=p.lifetime/p.maxLifetime;
+    p.mesh.rotation.x+=deltaTime*7;
+    p.mesh.rotation.y+=deltaTime*5;
+  }
+  
+  // 相机跟随
+  const idealOffset=new THREE.Vector3(0,3,7).applyQuaternion(player.quaternion).add(player.position);
+  camera.position.lerp(idealOffset,deltaTime*4);
+  const lookAt=player.position.clone().add(new THREE.Vector3(0,0,-10).applyQuaternion(player.quaternion));
+  camera.lookAt(lookAt);
+  
+  // HUD 更新
+  updateHUD();
+  
+  // 胜利检测
+  if(kills>=level.total){
+    endGame(true);
+  }
+}
+
+function hitEnemy(enemy,bullet){
+  if(!enemy.userData.alive)return;
+  enemy.userData.health--;
+  createExplosion(bullet.position.clone(),0xffaa44,8);
+  
+  if(enemy.userData.health<=0){
+    enemy.userData.alive=false;
+    kills++;
+    createExplosion(enemy.position.clone(),0xff6600,35);
+    createExplosion(enemy.position.clone(),0xffcc00,20);
+    showToast('KILL!');
+    setTimeout(()=>{
+      if(scene.children.includes(enemy)){
+        scene.remove(enemy);
+      }
+    },2000);
+  }
+}
+
+function updateHUD(){
+  if(!player)return;
+  const pd=player.userData;
+  document.getElementById('hpV').textContent=Math.max(0,Math.round(hp));
+  document.getElementById('spdV').textContent=Math.round(pd.speed);
+  document.getElementById('altV').textContent=Math.round(player.position.y);
+  document.getElementById('killV').textContent=kills;
+  document.getElementById('totV').textContent=LEVELS[currentLevel].total;
+  document.getElementById('hpV').style.color=hp<30?'#f88':hp<60?'#ff8':'#8f8';
+}
+
+function showToast(message){
+  const toast=document.getElementById('toast');
+  toast.textContent=message;
+  toast.style.opacity=1;
+  setTimeout(()=>{toast.style.opacity=0;},800);
+}
+
+// ==================== 渲染循环 ====================
+function render(){
+  renderer.render(scene,camera);
+}
+
+function gameLoop(timestamp){
+  const deltaTime=Math.min((timestamp-lastTime)/1000,0.1);
+  lastTime=timestamp;
+  
+  if(gameState==='playing'&&!paused){
+    updateGame(deltaTime);
+  }
+  
+  render();
+  requestAnimationFrame(gameLoop);
+}
+
+// ==================== 游戏流程控制 ====================
+function showLevels(){
+  document.getElementById('menu').style.display='none';
+  document.getElementById('result').style.display='none';
+  document.getElementById('levelSelect').style.display='flex';
+}
+
+function start(levelIndex){
+  currentLevel=levelIndex;
+  
+  // 清理
+  for(const e of enemies){if(scene.children.includes(e))scene.remove(e);}
+  for(const b of bullets){if(scene.children.includes(b))scene.remove(b);}
+  for(const p of particles){if(scene.children.includes(p.mesh))scene.remove(p.mesh);}
+  enemies=[];
+  bullets=[];
+  particles=[];
+  
+  // 重置状态
+  spawnedCount=0;
+  kills=0;
+  hp=100;
+  shotsFired=0;
+  shotsHit=0;
+  spawnTimer=0;
+  
+  // 创建/重置玩家
+  if(!player){
+    player=createPlayer();
+  }else{
+    resetPlayer();
+  }
+  
+  // UI
+  document.getElementById('levelSelect').style.display='none';
+  document.getElementById('result').style.display='none';
+  document.getElementById('ui').style.display='block';
+  
+  gameState='playing';
+  paused=false;
+  lastTime=performance.now();
+}
+
+function togglePause(){
+  if(gameState!=='playing')return;
+  paused=!paused;
+  showToast(paused?'PAUSED':'');
+  if(paused){
+    document.exitPointerLock();
+  }
+}
+
+function endGame(victory){
+  gameState='ended';
+  document.exitPointerLock();
+  document.getElementById('ui').style.display='none';
+  document.getElementById('result').style.display='flex';
+  
+  const title=document.getElementById('rTitle');
+  title.textContent=victory?'◆ MISSION COMPLETE ◆':'◆ MISSION FAILED ◆';
+  title.style.color=victory?'#8f8':'#f88';
+  
+  const accuracy=shotsFired>0?Math.round(shotsHit/shotsFired*100):0;
+  const total=LEVELS[currentLevel].total;
+  let rank='F';
+  if(victory){
+    if(kills>=total)rank='S';
+    else if(kills>=total*0.8)rank='A';
+    else if(kills>=total*0.6)rank='B';
+    else rank='C';
+  }
+  
+  document.getElementById('rKills').textContent=kills;
+  document.getElementById('rAcc').textContent=accuracy+'%';
+  document.getElementById('rRank').textContent=rank;
+}
+
+function retry(){
+  start(currentLevel);
+}
+
+function back(){
+  gameState='menu';
+  document.getElementById('result').style.display='none';
+  document.getElementById('ui').style.display='none';
+  document.getElementById('menu').style.display='flex';
+  
+  // 清理场景
+  for(const e of enemies){if(scene.children.includes(e))scene.remove(e);}
+  for(const b of bullets){if(scene.children.includes(b))scene.remove(b);}
+  for(const p of particles){if(scene.children.includes(p.mesh))scene.remove(p.mesh);}
+  enemies=[];
+  bullets=[];
+  particles=[];
+  spawnedCount=0;
+  kills=0;
+  hp=100;
+  
+  if(player){
+    scene.remove(player);
+    player=null;
+  }
+}
+
+// ==================== 启动 ====================
+initScene();
+requestAnimationFrame(gameLoop);
+</script>
+</body></html>
