@@ -14,7 +14,7 @@
           <a href="#pipeline" class="active">{{ lang === 'en' ? 'Pipeline' : '流水线' }}</a>
           <a href="#works">{{ lang === 'en' ? 'Works' : '作品' }}</a>
           <a href="#about">{{ lang === 'en' ? 'About' : '关于' }}</a>
-          <a href="https://nsieteam.github.io/ai-finance-legion/" target="_blank">{{ lang === 'en' ? 'Finance' : '金融' }}</a>
+          <a href="#cta">{{ lang === 'en' ? 'Reach Us' : '联系我们' }}</a>
           <a href="#cta" class="liquid-glass-btn nav-cta">{{ lang === 'en' ? 'Start Creating' : '开始创作' }}</a>
         </div>
       </nav>
@@ -215,34 +215,27 @@ export default {
         { name: 'Game Tester', cnName: '游戏测试官', icon: '🔍', desc: 'Runs the game, finds bugs, suggests balance and polish tweaks', cnDesc: '运行游戏、发现 bug、建议平衡性和润色调整', bg: 'rgba(255, 200, 80, 0.12)' },
         { name: 'Game Publisher', cnName: '游戏发行官', icon: '🚀', desc: 'Packages and deploys the final game — shareable, playable URL', cnDesc: '打包并部署最终游戏——生成可分享、可玩的 URL', bg: 'rgba(255, 130, 130, 0.12)' },
       ],
-            realWorks: [
+      realWorks: [
         {
-          icon: 'T-Rex', title: 'Dino Run', tag: 'Demo',
-          desc: 'Endless runner with a cute T-Rex',
-          cnDesc: '萌系小恐龙无限跑酷',
-          url: BASE + '/games/dino-run/',
+          icon: '🦖', title: 'Dino Run', tag: 'Demo',
+          desc: 'Endless runner with a cute T-Rex — jump over cacti, dodge flying birds, and see how far you can go. Procedural terrain, parallax stars, and particle effects.',
+          cnDesc: '萌系小恐龙无限跑酷——跳跃躲避仙人掌和飞鸟，看你能跑多远。程序化地形、视差星空、粒子特效。',
+          url: `${BASE}/games/dino-run/`,
           prompt: '做一个用空格跳跃的小恐龙跑酷游戏',
         },
         {
-          icon: 'Rocket', title: 'Space Shooter', tag: 'Demo',
-          desc: 'Top-down space shooter',
-          cnDesc: '俯视角太空射击',
-          url: BASE + '/games/space-shooter/',
-          prompt: '帮我做一个太空射击游戏',
+          icon: '🚀', title: 'Space Shooter', tag: 'Demo',
+          desc: 'Top-down space shooter — mouse to fly, click to fire. Three enemy types with different movement patterns, shield system, and explosive particle effects.',
+          cnDesc: '俯视角太空射击——鼠标飞行、点击开火。三种敌人类型各有不同移动模式，护盾系统和爆炸粒子特效。',
+          url: `${BASE}/games/space-shooter/`,
+          prompt: '帮我做一个太空射击游戏，鼠标控制飞船移动、点击发射子弹、打敌机',
         },
         {
-          icon: 'Bricks', title: 'Star Shatter', tag: 'Demo',
-          desc: 'Neon cyberpunk Breakout',
-          cnDesc: '霓虹赛博朋克打砖块',
-          url: BASE + '/games/breakout/',
+          icon: '🧱', title: '星碎 Breakout', tag: 'Demo',
+          desc: 'Neon cyberpunk Breakout — rainbow bricks, particle explosions, combo scoring, 8 progressive stages, metal bricks, and floating challenges.',
+          cnDesc: '霓虹赛博朋克打砖块——彩虹砖块、粒子爆炸、连击计分、8 个难度递进关卡、金属砖块、浮动挑战。',
+          url: `${BASE}/games/breakout/`,
           prompt: '做一个打砖块 Breakout 游戏',
-        },
-        {
-          icon: 'Pick', title: 'MiniCraft 3D', tag: 'New',
-          desc: 'First-person sandbox in Three.js',
-          cnDesc: 'Three.js 第一人称沙盒',
-          url: BASE + '/games/minecraft-3d/',
-          prompt: '一个超小的 3D 网页版 Minecraft',
         },
       ],
       capabilities: [
