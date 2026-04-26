@@ -80,7 +80,7 @@
         <div class="container">
           <div class="pipeline-header reveal">
             <h2 v-html="t('Game <span class=__gtext__>Library</span>','游戏<span class=__gtext__>库</span>')"></h2>
-            <p>{ t('4 games created by our 6-agent pipeline.','6 Agent 流水线产出的 4 款游戏。') }</p>
+            <p>{{ t('4 games created by our 6-agent pipeline.','6 Agent 流水线产出的 4 款游戏。') }}</p>
           </div>
           <div class="works-grid">
 
@@ -92,7 +92,7 @@
               </div>
               <div class="work-desc">{{ t('First-person sandbox in Three.js','Three.js 第一人称沙盒') }}</div>
               <div class="work-actions">
-                <a :href="'/ai-game-studio/games/minecraft-3d/'" target="_blank" class="liquid-glass-btn work-btn" @click.prevent="openGame('/ai-game-studio/games/minecraft-3d/')"><span>[&gt;]</span>{ t('Play Now','立即试玩') }</a>
+                <a :href="'/ai-game-studio/games/minecraft-3d/'" target="_blank" class="liquid-glass-btn work-btn" @click.prevent="openGame('/ai-game-studio/games/minecraft-3d/')"><span>[&gt;]</span>{{ t('Play Now','立即试玩') }}</a>
                 <span class="work-input">Prompt: <em>一个超小的 3D 网页版 Minecraft</em></span>
               </div>
             </div>
@@ -105,7 +105,7 @@
               </div>
               <div class="work-desc">{{ t('Endless runner with T-Rex','萌系小恐龙无限跑酷') }}</div>
               <div class="work-actions">
-                <a :href="'/ai-game-studio/games/dino-run/'" target="_blank" class="liquid-glass-btn work-btn" @click.prevent="openGame('/ai-game-studio/games/dino-run/')"><span>[&gt;]</span>{ t('Play Now','立即试玩') }</a>
+                <a :href="'/ai-game-studio/games/dino-run/'" target="_blank" class="liquid-glass-btn work-btn" @click.prevent="openGame('/ai-game-studio/games/dino-run/')"><span>[&gt;]</span>{{ t('Play Now','立即试玩') }}</a>
                 <span class="work-input">Prompt: <em>做一个用空格跳跃的小恐龙跑酷游戏</em></span>
               </div>
             </div>
@@ -118,7 +118,7 @@
               </div>
               <div class="work-desc">{{ t('Top-down space shooter','俯视角太空射击') }}</div>
               <div class="work-actions">
-                <a :href="'/ai-game-studio/games/space-shooter/'" target="_blank" class="liquid-glass-btn work-btn" @click.prevent="openGame('/ai-game-studio/games/space-shooter/')"><span>[&gt;]</span>{ t('Play Now','立即试玩') }</a>
+                <a :href="'/ai-game-studio/games/space-shooter/'" target="_blank" class="liquid-glass-btn work-btn" @click.prevent="openGame('/ai-game-studio/games/space-shooter/')"><span>[&gt;]</span>{{ t('Play Now','立即试玩') }}</a>
                 <span class="work-input">Prompt: <em>帮我做一个太空射击游戏</em></span>
               </div>
             </div>
@@ -131,7 +131,7 @@
               </div>
               <div class="work-desc">{{ t('Neon cyberpunk Breakout','霓虹赛博朋克打砖块') }}</div>
               <div class="work-actions">
-                <a :href="'/ai-game-studio/games/breakout/'" target="_blank" class="liquid-glass-btn work-btn" @click.prevent="openGame('/ai-game-studio/games/breakout/')"><span>[&gt;]</span>{ t('Play Now','立即试玩') }</a>
+                <a :href="'/ai-game-studio/games/breakout/'" target="_blank" class="liquid-glass-btn work-btn" @click.prevent="openGame('/ai-game-studio/games/breakout/')"><span>[&gt;]</span>{{ t('Play Now','立即试玩') }}</a>
                 <span class="work-input">Prompt: <em>做一个打砖块 Breakout 游戏</em></span>
               </div>
             </div>
