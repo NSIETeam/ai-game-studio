@@ -19,12 +19,14 @@ canvas{display:block}
 #blocker h1{font-size:36px;margin-bottom:12px;letter-spacing:2px}
 #blocker p{font-size:16px;opacity:.8}
 #blocker .keys{margin-top:24px;font-size:13px;opacity:.6;line-height:1.8;text-align:center}
+.inv-count{position:absolute;bottom:1px;right:3px;font-size:9px;color:#fff;background:rgba(0,0,0,.6);padding:0 3px;border-radius:2px;pointer-events:none}
+.slot{position:relative}
 </style>
 </head>
 <body>
 <div id="crosshair"></div>
 <div id="hotbar"></div>
-<div id="info">WASD移动 · 鼠标视角 · 左键破坏 · 右键放置 · 1-4切换方块</div>
+<div id="info">WASD 移动 · 鼠标视角 · 左键破坏 · 右键放置 · 1-4 切换方块 · 空格跳跃</div>
 <div id="blocker">
   <h1>⛏ MiniCraft</h1>
   <p>点击进入游戏</p>
@@ -95,6 +97,15 @@ const TEX = {
     const tex=new THREE.CanvasTexture(c);tex.needsUpdate=true;return tex;
   })()
 };
+
+// ===== WATER TEXTURE =====
+const waterTex=(()=>{
+  const can=document.createElement('canvas');can.width=16;can.height=16;
+  const ctx=can.getContext('2d');
+  ctx.fillStyle='rgb(20,80,140)';ctx.fillRect(0,0,16,16);
+  for(let i=0;i<40;i++){ctx.fillStyle='rgba(60,140,220,0.3)';ctx.fillRect(Math.random()*14|0,Math.random()*14|0,3,1);}
+  const t=new THREE.CanvasTexture(can);t.needsUpdate=true;return t;
+})();
 
 // ===== BLOCK TYPES =====
 const BLOCKS = {
@@ -264,24 +275,41 @@ function rebuildAll(){
 
 // ===== TERRAIN GENERATION =====
 function generateWorld(){
-  // Simple seed random
+  // Simple noise for height variation
   let seed=12345;
   function rand(){seed=(seed*1664525+1013904223)&0xFFFFFFFF;return (seed>>>0)/4294967296;}
+  function noise(x,z){
+    const xi=Math.floor(x/3);const zi=Math.floor(z/3);
+    const xf=(x/3)-xi;const zf=(z/3)-zi;
+    const tl=((xi*374761393+zi*668265263)&0x7FFFFFFF)/0x7FFFFFFF;
+    const tr=(((xi+1)*374761393+zi*668265263)&0x7FFFFFFF)/0x7FFFFFFF;
+    const bl=((xi*374761393+(zi+1)*668265263)&0x7FFFFFFF)/0x7FFFFFFF;
+    const br=(((xi+1)*374761393+(zi+1)*668265263)&0x7FFFFFFF)/0x7FFFFFFF;
+    const a=tl+(tr-tl)*xf;const b=bl+(br-bl)*xf;
+    return a+(b-a)*zf;
+  }
 
-  // Flat ground
+  // Heightmap terrain
   for(let x=0;x<W;x++){
     for(let z=0;z<W;z++){
-      addBlock(x,0,z,'grass');
-      for(let y=1;y<3;y++)addBlock(x,y,z,'dirt');
-      for(let y=3;y<H;y++)addBlock(x,y,z,'stone');
+      let h=Math.floor(noise(x,z)*4+1);
+      if(h<0)h=0;if(h>3)h=3;
+      if(h===0){addBlock(x,0,z,'grass');addWater(x,1,z);}
+      else{
+        addBlock(x,0,z,'grass');
+        for(let y=1;y<h+1;y++)addBlock(x,y,z,'dirt');
+        for(let y=h+1;y<H;y++)addBlock(x,y,z,'stone');
+      }
     }
   }
 
   // Trees
   for(let t=0;t<8;t++){
     const tx=2+(rand()*12|0);const tz=2+(rand()*12|0);
-    // Check not too close to center
     if(Math.abs(tx-8)<3&&Math.abs(tz-8)<3)continue;
+    // Skip trees on water
+    const hasWaterBelow=waterBlocks.some(w=>w.x===tx&&w.y===1&&w.z===tz)||waterBlocks.some(w=>w.x===tx&&w.y===2&&w.z===tz);
+    if(hasWaterBelow)continue;
     // Trunk
     for(let h=1;h<=4;h++)addBlock(tx,h,tz,'wood');
     // Leaves
@@ -307,6 +335,70 @@ function generateWorld(){
 generateWorld();
 rebuildAll();
 
+// ===== BLOCK HIGHLIGHT =====
+const highlightGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(1.005, 1.005, 1.005));
+const highlightMat = new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.5});
+const highlightMesh = new THREE.LineSegments(highlightGeo, highlightMat);
+highlightMesh.visible = false;
+scene.add(highlightMesh);
+
+function updateHighlight(){
+  raycaster.setFromCamera({x:0,y:0},camera);
+  let bestDist=Infinity;let bestBlock=null;
+  for(const key of Object.keys(chunks)){const chunk=chunks[key];
+    for(const b of chunk.blocks){
+      const bc=new THREE.Box3(new THREE.Vector3(b.x,b.y,b.z),new THREE.Vector3(b.x+1,b.y+1,b.z+1));
+      if(!raycaster.ray.intersectsBox(bc))continue;
+      const entry=raycaster.ray.intersectBox(bc,new THREE.Vector3());
+      if(entry){const dist=raycaster.ray.origin.distanceTo(entry);
+        if(dist<bestDist){bestDist=dist;bestBlock=b;}}}}
+  if(bestBlock&&bestDist<6){highlightMesh.position.set(bestBlock.x+0.5,bestBlock.y+0.5,bestBlock.z+0.5);highlightMesh.visible=true;}
+  else{highlightMesh.visible=false;}
+}
+
+// ===== SOUND =====
+let audioCtx=null;
+function initAudio(){if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();}
+function playTone(f,d,vol,ty){if(!audioCtx)return;const o=audioCtx.createOscillator();const g=audioCtx.createGain();o.type=ty||'square';o.frequency.value=f;g.gain.value=vol||0.1;g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+(d||0.1));o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+(d||0.1));}
+function playDig(){playTone(200,0.1,0.08);}
+function playPlace(){playTone(400,0.1,0.06);}
+function playJump(){playTone(300,0.15,0.05,'sine');}
+
+// ===== PARTICLES =====
+const particles=[];
+function spawnParticles(x,y,z,color){
+  for(let i=0;i<12;i++){
+    const g=new THREE.BoxGeometry(0.08,0.08,0.08);
+    const m=new THREE.MeshLambertMaterial({color});
+    const p=new THREE.Mesh(g,m);
+    p.position.set(x+0.5,y+0.5,z+0.5);
+    p.userData={vx:(Math.random()-0.5)*4,vy:Math.random()*4+1,vz:(Math.random()-0.5)*4,life:1};
+    scene.add(p);particles.push(p);
+  }
+}
+function updateParticles(dt){
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];p.userData.vy-=9.8*dt;
+    p.position.x+=p.userData.vx*dt;p.position.y+=p.userData.vy*dt;p.position.z+=p.userData.vz*dt;
+    p.userData.life-=dt*2;p.material.transparent=true;p.material.opacity=Math.max(0,p.userData.life);
+    if(p.userData.life<=0){scene.remove(p);p.geometry.dispose();p.material.dispose();particles.splice(i,1);}
+  }
+}
+
+// ===== INVENTORY =====
+let inventory={'dirt':64,'grass':0,'stone':0,'wood':0,'leaves':0};
+const blockColors={'grass':0x8BAA6E,'dirt':0x8B6E4E,'stone':0x808080,'wood':0x8B6E4E,'leaves':0x3C8C28};
+
+// ===== WATER =====
+let waterBlocks=[];
+function addWater(x,y,z){
+  const g=new THREE.BoxGeometry(1,1,1);
+  const m=new THREE.MeshLambertMaterial({color:0x1B6A9E,transparent:true,opacity:0.6});
+  const mesh=new THREE.Mesh(g,m);
+  mesh.position.set(x+0.5,y+0.5,z+0.5);
+  scene.add(mesh);
+  waterBlocks.push({x,y,z,mesh});
+}
 // ===== PLAYER =====
 const player=new THREE.Object3D();
 player.position.set(8,5,8);
@@ -394,12 +486,14 @@ function hitBlock(){
     }
   }
   if(bestBlock&&bestDist<6){
+    const bType=getBlock(bestBlock.x,bestBlock.y,bestBlock.z).type;
     removeBlock(bestBlock.x,bestBlock.y,bestBlock.z);
-    // Remove from world
-    for(const key of Object.keys(chunks)){
-      chunks[key].needsRebuild=true;
-    }
+    for(const key of Object.keys(chunks))chunks[key].needsRebuild=true;
     rebuildAll();
+    initAudio();playDig();
+    const col=blockColors[bType]||0x888888;
+    spawnParticles(bestBlock.x,bestBlock.y,bestBlock.z,col);
+    if(inventory[bType]!==undefined)inventory[bType]++;
   }
 }
 
@@ -442,9 +536,14 @@ function placeBlock(){
     if(nx===px&&ny===py&&nz===pz)return;
     if(nx===px&&ny===py+1&&nz===pz)return;
     if(!getBlock(nx,ny,nz)){
-      addBlock(nx,ny,nz,BLOCK_LIST[selectedSlot]);
-      for(const key of Object.keys(chunks))chunks[key].needsRebuild=true;
-      rebuildAll();
+      const selType=BLOCK_LIST[selectedSlot];
+      if(inventory[selType]>0||selType==='dirt'||selType==='stone'){
+        addBlock(nx,ny,nz,selType);
+        for(const key of Object.keys(chunks))chunks[key].needsRebuild=true;
+        rebuildAll();
+        initAudio();playPlace();
+        if(inventory[selType]!==undefined&&inventory[selType]>0)inventory[selType]--;
+      }
     }
   }
 }
@@ -490,7 +589,17 @@ for(let i=0;i<4;i++){
 }
 function updateHotbar(){
   const slots=hotbarEl.querySelectorAll('.slot');
-  slots.forEach((s,i)=>s.className='slot'+(i===selectedSlot?' active':''));
+  slots.forEach((s,i)=>{s.className='slot'+(i===selectedSlot?' active':'');});
+}
+function updateInventoryDisplay(){
+  const slots=hotbarEl.querySelectorAll('.slot');
+  slots.forEach((s,i)=>{
+    const name=BLOCK_LIST[i];
+    const count=inventory[name];
+    let countEl=s.querySelector('.inv-count');
+    if(!countEl){countEl=document.createElement('span');countEl.className='inv-count';s.appendChild(countEl);}
+    countEl.textContent=count>0?count:'';
+  });
 }
 
 // ===== GAME LOOP =====
@@ -498,6 +607,8 @@ const clock=new THREE.Clock();
 
 function update(){
   const dt=Math.min(clock.getDelta(),.05);
+  updateHighlight();
+  updateParticles(dt);
 
   // Mouse look
   if(pointerLocked){
@@ -554,6 +665,7 @@ function update(){
   camera.position.copy(player.position);
   camera.position.y+=1.6; // eye height
 
+  updateInventoryDisplay();
   renderer.render(scene,camera);
   requestAnimationFrame(update);
 }
