@@ -565,9 +565,106 @@ img { max-width: 100%; vertical-align: middle; }
   font-size: 13px;
 }
 
+/* ========== WIP Banner ========== */
+.wip-banner {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 10px 20px; border-radius: 100px;
+  background: rgba(168,130,255,0.08);
+  font-size: 13px; color: hsl(252, 50%, 75%);
+}
+.wip-dot { animation: pulse-dot 1.5s ease-in-out infinite; color: var(--accent); }
+
+/* ========== Modules Grid ========== */
+.modules-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.module-card {
+  padding: 32px; border-radius: var(--radius-lg);
+  background: rgba(255,255,255,0.02);
+  backdrop-filter: blur(4px);
+  box-shadow: inset 0 1px 1px rgba(255,255,255,0.08);
+  position: relative; overflow: hidden;
+  cursor: pointer; transition: all 0.3s ease;
+}
+.module-card::before {
+  content: '';
+  position: absolute; inset: 0; border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(180deg,
+    rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.06) 30%,
+    transparent 50%, transparent 70%,
+    rgba(255,255,255,0.06) 85%, rgba(255,255,255,0.25) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  pointer-events: none;
+}
+.module-card:hover { transform: translateY(-4px); background: rgba(255,255,255,0.04); }
+.module-icon { font-size: 36px; margin-bottom: 12px; }
+.module-card h3 { font-family: var(--font-display); font-size: 22px; letter-spacing: -.3px; margin-bottom: 8px; }
+.module-card > p { font-size: 13px; color: hsl(var(--muted-foreground)); line-height: 1.6; margin-bottom: 16px; }
+.module-agents { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.module-agents span {
+  padding: 3px 10px; border-radius: 100px;
+  background: rgba(255,255,255,0.05);
+  font-size: 11px; font-family: var(--font-mono);
+  color: hsl(var(--muted-foreground));
+}
+.module-footer { display: flex; justify-content: space-between; align-items: center; }
+.module-action { font-size: 12px; color: var(--accent); }
+.module-status { font-size: 10px; font-family: var(--font-mono); color: hsl(var(--muted-foreground)); opacity: 0.5; }
+.module-badge {
+  position: absolute; top: 16px; right: 16px;
+  font-size: 9px; font-family: var(--font-mono); letter-spacing: 1px;
+  padding: 3px 8px; border-radius: 100px;
+}
+.module-badge.wip { background: rgba(255,200,80,0.1); color: hsl(42, 80%, 60%); }
+.module-badge.live { background: rgba(0,200,150,0.1); color: var(--green); }
+
+/* ========== Vote Buttons ========== */
+.vote-btn, .vote-btn-sm, .vote-btn-xs {
+  background: none; border: none; color: hsl(var(--muted-foreground));
+  cursor: pointer; font-size: 14px; padding: 2px 6px;
+  border-radius: 4px; transition: all 0.2s;
+  font-family: var(--font-mono);
+}
+.vote-btn:hover, .vote-btn-sm:hover, .vote-btn-xs:hover { color: var(--accent); transform: scale(1.1); }
+.vote-btn-sm { font-size: 12px; }
+.vote-btn-xs { font-size: 10px; }
+
+/* ========== Validation Messages ========== */
+.pass-msg { background: rgba(0,200,150,0.08); color: var(--green); }
+.fail-msg { background: rgba(255,100,80,0.08); color: hsl(0, 60%, 60%); }
+
+/* ========== Glass Reusable ========== */
+.glass {
+  background: rgba(255,255,255,0.02);
+  backdrop-filter: blur(4px);
+  box-shadow: inset 0 1px 1px rgba(255,255,255,0.08);
+  position: relative; overflow: hidden;
+}
+.glass::before {
+  content: '';
+  position: absolute; inset: 0; border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(180deg,
+    rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.06) 30%,
+    transparent 50%, transparent 70%,
+    rgba(255,255,255,0.06) 85%, rgba(255,255,255,0.25) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  pointer-events: none;
+}
+
 /* ========== Media Queries ========== */
 @media (max-width: 768px) {
   .nav { gap: 16px; }
   .nav a { font-size: 11px; }
   .nav-cta { display: none; }
+  .modules-grid { grid-template-columns: 1fr; }
+  .wip-banner { font-size: 11px; }
 }

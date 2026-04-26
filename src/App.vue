@@ -1,510 +1,75 @@
 <template>
   <div class="app">
-    <!-- Navigation -->
     <header class="header" :class="{ scrolled: scrolled }">
       <nav class="container header-inner">
-        <a href="#" class="logo">
+        <a href="#" class="logo" @click.prevent="goHome">
           <span class="logo-icon" style="opacity:.6;font-size:18px;font-family:var(--font-mono)">[+]</span>
-          <span>{{ lang === 'en' ? 'AI Game Studio' : 'AI 游戏工作室' }}</span>
+          <span>{{ t('AI Game Studio','AI \u6e38\u620f\u5de5\u4f5c\u5ba4') }}</span>
         </a>
-        <button class="lang-toggle" @click="toggleLang">
-          {{ lang === 'en' ? '[CN] zh' : '[EN] EN' }}
-        </button>
+        <button class="lang-toggle" @click="toggleLang">{{ lang==='en'?'[CN] zh':'[EN] EN' }}</button>
         <div class="nav">
-          <a href="#pipeline" :class="{ active: activeSection === 'pipeline' }">{{ lang === 'en' ? 'Pipeline' : '流水线' }}</a>
-          <a href="#works" :class="{ active: activeSection === 'works' }">{{ lang === 'en' ? 'Works' : '作品' }}</a>
-          <a href="#about" :class="{ active: activeSection === 'about' }">{{ lang === 'en' ? 'About' : '关于' }}</a>
-          <a href="#comments" :class="{ active: activeSection === 'comments' }">{{ lang === 'en' ? 'Discussion' : '讨论' }}</a>
-          <a href="#cta" :class="{ active: activeSection === 'cta' }">{{ lang === 'en' ? 'Reach Us' : '联系我们' }}</a>
-          <a href="https://nsieteam.github.io/ai-finance-legion/" class="liquid-glass-btn nav-cta" style="gap:4px;font-size:11px;">
-            <span style="font-size:14px;">[#]</span>
-            {{ lang === 'en' ? 'Finance Legion' : '财务军团' }}
-          </a>
-          <a href="#cta" class="liquid-glass-btn nav-cta" style="gap:4px;font-size:11px;">{{ lang === 'en' ? 'Start Creating' : '开始创作' }}</a>
+          <a v-if="v!='home'" href="#" @click.prevent="goHome">{{ t('Home','\u9996\u9875') }}</a>
+          <a href="#" @click.prevent="setView('games')" :class="{active:v==='games'}">{{ t('Games','\u6e38\u620f') }}</a>
+          <a href="#" @click.prevent="setView('pipeline')" :class="{active:v==='pipeline'}">{{ t('Pipeline','\u6d41\u6c34\u7ebf') }}</a>
+          <a href="#" @click.prevent="setView('discussion')" :class="{active:v==='discussion'}">{{ t('Discussion','\u8ba8\u8bba') }}</a>
+          <a href="#" @click.prevent="setView('about')" :class="{active:v==='about'}">{{ t('About','\u5173\u4e8e') }}</a>
+          <a href="https://nsieteam.github.io/ai-finance-legion/" class="liquid-glass-btn nav-cta" style="gap:4px;font-size:11px"><span style="font-size:14px">[#]</span>{{ t('Finance Legion','\u8d22\u52a1\u519b\u56e2') }}</a>
         </div>
       </nav>
     </header>
-
-    <!-- Hero -->
-    <section class="hero" id="hero">
-      <div class="container hero-content">
-        <div class="hero-badge animate-fade-rise">
-          <span>//</span>
-          <span>{{ lang === 'en' ? 'AI Game Studio — powered by multi-agent AI' : 'AI 游戏工作室 — 多 Agent AI 驱动' }}</span>
+    <template v-if="v==='home'">
+      <section class="hero" id="hero">
+        <div class="container hero-content">
+          <div class="hero-badge animate-fade-rise"><span>//</span><span>{{ t('AI Game Studio \u2014 multi-agent AI','AI \u6e38\u620f\u5de5\u4f5c\u5ba4 \u2014 \u591a Agent AI \u9a71\u52a8') }}</span></div>
+          <h1 class="animate-fade-rise">{{ t('Ideas to Games,','\u521b\u610f\u5230\u6e38\u620f\uff0c') }}<br><span class="text-muted">{{ t('Agent to Agent.','Agent \u5230 Agent\u3002') }}</span></h1>
+          <p class="animate-fade-rise-delay">{{ t('A multi-agent AI team that transforms your game ideas into playable creations.','\u4e00\u4e2a\u591a Agent AI \u56e2\u961f\uff0c\u628a\u4f60\u7684\u6e38\u620f\u521b\u610f\u53d8\u6210\u53ef\u73a9\u7684\u6e38\u620f\u3002') }}</p>
+          <div class="wip-banner animate-fade-rise-delay-2"><span class="wip-dot">\u25cf</span><span>{{ t('We are continuously developing new features. More modules coming soon!','\u6211\u4eec\u6b63\u5728\u6301\u7eed\u5f00\u53d1\u65b0\u529f\u80fd\u3002\u66f4\u591a\u6a21\u5757\u5373\u5c06\u4e0a\u7ebf\uff01') }}</span></div>
         </div>
-        <h1 class="animate-fade-rise" v-if="lang === 'en'">
-          Your imagination,<br>
-          <span class="text-muted">brought to life.</span>
-        </h1>
-        <h1 class="animate-fade-rise" v-else>
-          你的想象，<br>
-          <span class="text-muted">化为现实。</span>
-        </h1>
-        <p class="animate-fade-rise-delay" v-if="lang === 'en'">
-          A multi-agent AI team that transforms your game ideas into playable creations.
-          Describe what you want — watch it come alive.
-        </p>
-        <p class="animate-fade-rise-delay" v-else>
-          一个多 Agent AI 团队，把你的游戏创意变成可玩的游戏。描述你的想法——看它活起来。
-        </p>
-        <div class="hero-actions animate-fade-rise-delay-2">
-          <button class="liquid-glass-btn" @click="scrollTo('#pipeline')">
-            {{ lang === 'en' ? 'Meet the Team' : '认识团队' }}
-            <span style="font-size: 18px;">-></span>
-          </button>
-          <button class="liquid-glass-btn" @click="scrollTo('#cta')">
-            {{ lang === 'en' ? 'Create Game' : '创作游戏' }}
-          </button>
-          <button class="liquid-glass-btn" @click="window.open('https://nsieteam.github.io/ai-finance-legion/','_blank')">
-            [#] {{ lang === 'en' ? 'Try Finance Legion' : '体验财务军团' }}
-          </button>
-        </div>
-        <div class="hero-input-area animate-fade-rise-delay-3">
-          <div class="liquid-glass">
-            <input
-              v-model="ideaInput"
-              :disabled="isLoading"
-              :placeholder="lang === 'en' ? 'e.g., a pixel-art platformer where you play as a magical cat...' : '例如：一个像素风平台跳跃游戏，扮演一只魔法猫...'"
-              @keyup.enter="handleIdea"
-            />
-            <button @click="handleIdea" :disabled="isLoading">{{ isLoading ? '...' : (lang === 'en' ? 'Generate ->' : '生成 ->') }}</button>
+      </section>
+      <section class="section" id="modules">
+        <div class="container">
+          <div class="pipeline-header reveal">
+            <h2 v-html="t('Explore <span class=__gtext__>Modules</span>','<span class=__gtext__>\u529f\u80fd\u6a21\u5757</span>')"></h2>
+            <p>{{ t('Each module is powered by a dedicated multi-agent pipeline.','\u6bcf\u4e2a\u6a21\u5757\u7531\u4e13\u5c5e\u7684\u591a Agent \u6d41\u6c34\u7ebf\u9a71\u52a8\u3002') }}</p>
           </div>
-          <div v-if="isLoading" class="hero-loading">
-            <div v-for="(step, si) in ['Game Designer', 'Pixel Artist', 'Game Architect', 'Game Coder', 'Game Tester', 'Game Publisher']" :key="step" class="loading-step" :class="{ active: si <= loadingStep, done: si < loadingStep }">
-              <span class="loading-dot" v-if="si < loadingStep">[x]</span>
-              <span class="loading-dot pulse" v-else-if="si === loadingStep">●</span>
-              <span class="loading-dot" v-else>○</span>
-              <span>{{ lang === 'en' ? step : ['游戏策划官','像素美术师','游戏架构师','游戏工程师','游戏测试官','游戏发行官'][si] }}</span>
-              <span v-if="si < loadingStep" class="loading-status">{{ lang === 'en' ? 'done' : '完成' }}</span>
-              <span v-else-if="si === loadingStep" class="loading-status active">{{ lang === 'en' ? 'working...' : '工作中...' }}</span>
+          <div class="modules-grid">
+            <div class="module-card reveal" @click="setView('games')" >
+              <div class="module-badge wip">WIP</div>
+              <div class="module-icon">[\U0001F3AE]</div>
+              <h3>{{ t('Game Pipeline','\u6e38\u620f\u6d41\u6c34\u7ebf') }}</h3>
+              <p>{{ t('6 agents collaborate to turn one sentence into a playable web game.','6 \u4e2a Agent \u534f\u4f5c\uff0c\u4e00\u53e5\u8bdd\u53d8\u6210\u53ef\u73a9\u7f51\u9875\u6e38\u620f\u3002') }}</p>
+              <div class="module-agents"><span v-for="a in ['Designer','Artist','Architect','Coder','Tester','Publisher']" :key="a">{{ a }}</span></div>
+              <div class="module-footer"><span class="module-action">{{ t('View Games \u2192','\u67e5\u770b\u6e38\u620f \u2192') }}<span class=module-status>4 games live</span></span></div>
             </div>
-          </div>
-          <p style="margin-top:8px;font-size:11px;color:rgba(255,255,255,0.2);text-align:center;">{{ lang === 'en' ? 'Backend integration in progress — demos available below' : '后端接入开发中 — 下方演示游戏可直接游玩' }}</p>
-        <div v-if="showSuccess" class="hero-success">
-            <p>{{ lang === 'en' ? 'Game created successfully. Try our demos:' : '游戏创作完成。试试我们的演示：' }}</p>
-            <div class="success-links">
-              <a v-for="work in realWorks" :key="work.title" :href="work.url" target="_blank" class="liquid-glass-btn success-game-btn" @click.prevent="openGame(work.url)">
-                {{ work.icon }} {{ work.title }}
-              </a>
+            <div class="module-card reveal" @click="setView('discussion')" style="transition-delay:.1s">
+              <div class="module-badge wip">WIP</div>
+              <div class="module-icon">[\U0001F4AC]</div>
+              <h3>{{ t('Agent Discussion','Agent \u8ba8\u8bba\u533a') }}</h3>
+              <p>{{ t('Topics, threaded replies, upvotes \u2014 with multi-agent moderation.','\u8bdd\u9898\u3001\u5d4c\u5957\u56de\u590d\u3001\u70b9\u8d5e\u2014\u2014\u591a Agent \u5ba1\u6838\u3002') }}</p>
+              <div class="module-agents"><span v-for="a in ['Moderator','Validator','Summarizer']" :key="a">{{ a }}</span></div>
+              <div class="module-footer"><span class="module-action">{{ t('Join \u2192','\u53c2\u4e0e \u2192') }}<span class=module-status>0 topics</span></span></div>
+            </div>
+            <div class="module-card reveal" @click="window.open('https://nsieteam.github.io/ai-finance-legion/','_blank')" style="transition-delay:.2s">
+              <div class="module-badge live">LIVE</div>
+              <div class="module-icon">[\U0001F4C8]</div>
+              <h3>{{ t('Finance Legion','\u8d22\u52a1\u519b\u56e2') }}</h3>
+              <p>{{ t('6 financial AI agents analyze your personal finances.','6 \u4e2a\u8d22\u52a1 AI Agent \u5206\u6790\u4e2a\u4eba\u8d22\u52a1\u3002') }}</p>
+              <div class="module-agents"><span v-for="a in ['Auditor','Analyst','Advisor','Tax','Risk','CFO']" :key="a">{{ a }}</span></div>
+              <div class="module-footer"><span class="module-action">Try \u2192<span class=module-status>External</span></span></div>
+            </div>
+            <div class="module-card reveal" @click="setView('pipeline')" style="transition-delay:.3s">
+              <div class="module-badge wip">WIP</div>
+              <div class="module-icon">[\u2699\uFE0F]</div>
+              <h3>{{ t('Agent Pipeline','Agent \u6d41\u6c34\u7ebf') }}</h3>
+              <p>{{ t('8 agents in a production pipeline.','8 \u4e2a Agent \u5728\u751f\u4ea7\u6d41\u6c34\u7ebf\u4e0a\u534f\u4f5c\u3002') }}</p>
+              <div class="module-agents"><span v-for="a in ['Designer','Artist','Architect','Coder','Tester','Publisher']" :key="a">{{ a }}</span></div>
+              <div class="module-footer"><span class="module-action">{{ t('View \u2192','\u67e5\u770b \u2192') }}<span class=module-status>8 agents</span></span></div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
-
-    <!-- Pipeline -->
-    <section class="section pipeline" id="pipeline">
-      <div class="container">
-        <div class="pipeline-header reveal">
-          <h2 v-if="lang === 'en'">The <span class="gradient-text">Agent Assembly</span> Line</h2>
-          <h2 v-else><span class="gradient-text">Agent 流水线</span></h2>
-          <p v-if="lang === 'en'">Six specialized AI agents, each bringing a unique craft to your game.</p>
-          <p v-else>六个专属 AI Agent，各司其职。</p>
-        </div>
-        <div class="pipeline-flow">
-          <div class="pipeline-stage" v-for="(stage, si) in pipelineStages" :key="si">
-            <div class="stage-label">{{ stage.label }}</div>
-            <div class="stage-agents">
-              <div
-                v-for="(agent, i) in stage.agents"
-                :key="agent.name"
-                class="agent-card reveal"
-                :style="{ transitionDelay: `${(si * 4 + i) * 0.05}s` }"
-                @click="toggleAgent(agent.name)"
-              >
-                <div
-                  class="agent-icon"
-                  :style="{ background: agent.bg }"
-                >{{ agent.icon }}</div>
-                <div class="agent-info">
-                  <div class="agent-name">{{ lang === 'en' ? agent.name : agent.cnName }}</div>
-                  <div class="agent-desc">{{ lang === 'en' ? agent.desc : agent.cnDesc }}</div>
-                </div>
-                <div v-if="expandedAgent === agent.name" class="agent-detail">
-                  <div class="agent-detail-inner">
-                    <p>{{ lang === 'en' ? agent.detail : agent.cnDetail }}</p>
-                    <div class="agent-detail-tags">
-                      <span class="agent-detail-tag">
-                        <span class="tag-label">{{ lang === 'en' ? 'INPUT' : '输入' }}</span>
-                        <span>{{ agent.input }}</span>
-                      </span>
-                      <span class="agent-detail-tag">
-                        <span class="tag-label">{{ lang === 'en' ? 'OUTPUT' : '输出' }}</span>
-                        <span>{{ agent.output }}</span>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div v-if="si < pipelineStages.length - 1" class="stage-connector">
-              <span class="connector-arrow">▼</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Works -->
-    <section class="section works" id="works">
-      <div class="container">
-        <div class="pipeline-header reveal">
-          <h2 v-if="lang === 'en'">From <span class="gradient-text">Ideas</span> to Reality</h2>
-          <h2 v-else>从<span class="gradient-text">创意</span>到现实</h2>
-          <p v-if="lang === 'en'">Play the games our pipeline has produced.</p>
-          <p v-else>玩一玩流水线产出的游戏。</p>
-        </div>
-        <div class="works-grid">
-          <div
-            v-for="(work, i) in realWorks"
-            :key="work.title"
-            class="work-card reveal"
-            :style="{ transitionDelay: `${i * 0.1}s` }"
-          >
-            <div class="work-header">
-              <div class="work-icon">{{ work.icon }}</div>
-              <div class="work-title">{{ work.title }}</div>
-              <span class="work-tag">{{ work.tag }}</span>
-            </div>
-            <div class="work-desc">{{ lang === 'en' ? work.desc : work.cnDesc }}</div>
-            <div class="work-actions">
-              <a :href="work.url" target="_blank" class="liquid-glass-btn work-btn" @click.prevent="openGame(work.url)">
-                <span>[>]</span> {{ lang === 'en' ? 'Play Demo' : '试玩演示' }}
-              </a>
-              <span class="work-input">{{ lang === 'en' ? 'Prompt:' : '提示词：' }} <em>{{ work.prompt }}</em></span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Capabilities -->
-    <section class="section-sm capabilities" id="about">
-      <div class="container">
-        <div class="pipeline-header reveal">
-          <h2 v-if="lang === 'en'">What <span class="gradient-text">We Build</span></h2>
-          <h2 v-else>我们的<span class="gradient-text">能力</span></h2>
-          <p v-if="lang === 'en'">Every output is a complete, playable web game.</p>
-          <p v-else>每个输出都是完整可玩的网页游戏。</p>
-        </div>
-        <div class="caps-grid">
-          <div
-            v-for="(cap, i) in capabilities"
-            :key="cap.text"
-            class="cap-item reveal"
-            :style="{ transitionDelay: `${i * 0.06}s` }"
-          >
-            <div
-              class="cap-dot"
-              :style="{ background: cap.color }"
-            ></div>
-            <div class="cap-text">{{ lang === 'en' ? cap.text : cap.cnText }}</div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Tech Stack -->
-    <section class="section-sm tech-stack">
-      <div class="container">
-        <div class="pipeline-header reveal">
-          <h2 v-if="lang === 'en'">Built <span class="gradient-text">Different</span></h2>
-          <h2 v-else>与众<span class="gradient-text">不同</span></h2>
-          <p v-if="lang === 'en'">No heavy engines. No downloads. Instant web games.</p>
-          <p v-else>无需重型引擎，无需下载，即时可玩的网页游戏。</p>
-        </div>
-        <div class="tech-tags reveal">
-          <span class="tech-tag" v-for="tech in techs" :key="tech">{{ tech }}</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- CTA -->
-    <section class="section cta-section" id="cta">
-      <div class="container reveal">
-        <h2 v-if="lang === 'en'">Ready to create your <span class="gradient-text">first game</span>?</h2>
-        <h2 v-else>准备好创作你的<span class="gradient-text">第一款游戏</span>了吗？</h2>
-        <p v-if="lang === 'en'">Tell us your idea in a sentence. Our AI team will handle the rest.</p>
-        <p v-else>用一句话告诉我们你的创意。我们的 AI 团队搞定剩下的一切。</p>
-        <button class="liquid-glass-btn" @click="scrollTo('#hero')">
-          {{ lang === 'en' ? 'Start Creating Now ->' : '开始创作 ->' }}
-        </button>
-        <p style="margin-top:20px;font-size:12px;color:rgba(255,255,255,0.25);">
-          {{ lang === 'en' ? 'Backend integration in progress' : '后端接入开发中' }}
-        </p>
-        <div style="margin-top:16px;font-size:13px;color:var(--muted)">
-          {{ lang === 'en' ? 'Or try our' : '或体验' }}
-          <a href="https://nsieteam.github.io/ai-finance-legion/" style="color:var(--green);text-decoration:underline" target="_blank">
-            {{ lang === 'en' ? 'AI Finance Legion' : 'AI 财务军团' }}
-          </a>
-          {{ lang === 'en' ? '— 6-agent financial intelligence pipeline' : '— 6 Agent 财务智能流水线' }}
-        </div>
-      </div>
-    </section>
-
-    
-    <!-- Comments -->
-    <section class="section comments-section" id="comments">
-      <div class="container reveal">
-        <div class="pipeline-header">
-          <h2 v-if="lang === 'en'"><span class="gradient-text">Discussion</span></h2>
-          <h2 v-else><span class="gradient-text">讨论区</span></h2>
-          <p v-if="lang === 'en'">Share your thoughts, ideas, and feedback with the community.</p>
-          <p v-else>分享你的想法、创意和反馈。</p>
-        </div>
-        <div class="comments-box glass" style="max-width:700px;margin:0 auto;padding:32px;border-radius:24px;">
-          <div class="comment-form" style="margin-bottom:24px;">
-            <input
-              v-model="commentName"
-              :placeholder="lang === 'en' ? 'Your name (optional)' : '你的名字（可选）'"
-              class="comment-input"
-              style="width:100%;padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:#fff;font-family:var(--font-body);font-size:14px;margin-bottom:10px;"
-            />
-            <textarea
-              v-model="commentText"
-              :placeholder="lang === 'en' ? 'Write your comment...' : '写下你的评论...'"
-              rows="3"
-              class="comment-textarea"
-              style="width:100%;padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:#fff;font-family:var(--font-body);font-size:14px;resize:vertical;margin-bottom:10px;"
-            ></textarea>
-            <button
-              class="liquid-glass-btn"
-              @click="submitComment"
-              :disabled="!commentText.trim()"
-              style="padding:10px 28px;border-radius:100px;font-size:13px;"
-            >
-              {{ lang === 'en' ? 'Post Comment' : '发表评论' }}
-            </button>
-          </div>
-          <div class="comments-list" v-if="comments.length > 0">
-            <div
-              v-for="(comment, ci) in comments"
-              :key="ci"
-              class="comment-item"
-              style="padding:16px;border-top:1px solid rgba(255,255,255,0.05);"
-            >
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-                <span style="font-size:13px;color:var(--green);font-family:var(--font-mono);">[#{{ comments.length - ci }}]</span>
-                <span style="font-size:13px;color:var(--fg);font-weight:500;">{{ comment.name || (lang === 'en' ? 'Anonymous' : '匿名用户') }}</span>
-                <span style="font-size:11px;color:var(--muted);opacity:0.5;">{{ comment.time }}</span>
-              </div>
-              <p style="font-size:13px;color:var(--muted);line-height:1.6;white-space:pre-wrap;">{{ comment.text }}</p>
-            </div>
-          </div>
-          <div v-else style="text-align:center;padding:24px;color:var(--muted);font-size:13px;opacity:0.5;">
-            {{ lang === 'en' ? 'No comments yet. Be the first to share your thoughts!' : '暂无评论，来发表第一条评论吧！' }}
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="footer">
-      <div class="container footer-inner">
-        <div class="footer-copy">
-          {{ lang === 'en' ? 'AI Game Studio — multi-agent AI game creation' : 'AI 游戏工作室 — 多 Agent AI 游戏创作' }}
-        </div>
-        <div class="footer-links">
-          <a href="https://github.com/NSIETeam/ai-game-studio" target="_blank">GitHub</a>
-          <a href="https://easyclaw.link" target="_blank">EasyClaw</a>
-          <span style="font-size:11px;color:rgba(255,255,255,0.2);">{{ lang === 'en' ? 'Work in progress' : '持续开发中' }}</span>
-        </div>
-      </div>
-      <div class="container footer-skill">
-        <a :href="downloadUrl" class="liquid-glass-btn" download>
-          [v] {{ lang === 'en' ? 'Download Agent Pack' : '下载 Agent 工具包' }}
-        </a>
-      </div>
-    </footer>
-  </div>
-</template>
-
-<script>
-const BASE = '/ai-game-studio'
-
-export default {
-  name: 'App',
-  data() {
-    return {
-      scrolled: false,
-      lang: localStorage.getItem('aiGameStudioLang') || 'en',
-      ideaInput: '',
-      activeSection: 'hero',
-      expandedAgent: null,
-      commentName: '',
-      commentText: '',
-      comments: [],
-      pipelineStages: [
-        { label: 'Creation Pipeline', agents: [
-          { name: 'Game Designer', cnName: '游戏策划官', icon: '[D]', desc: 'Defines mechanics, rules, and player experience from your prompt', cnDesc: '从你的提示词中定义玩法、规则和玩家体验', bg: 'rgba(168, 130, 255, 0.12)', detail: 'Analyzes your one-sentence idea, expands it into a full Game Design Document (GDD) including core mechanics, win/lose conditions, difficulty curve, control scheme, and target audience.', cnDetail: '分析你的一句话创意，扩展为完整游戏设计文档(GDD)，包括核心玩法、胜负条件、难度曲线、操作方案和目标受众。', input: 'Your game idea (1 sentence)', output: 'PRD / Game Design Document' },
-          { name: 'Pixel Artist', cnName: '像素美术师', icon: '[A]', desc: 'Creates all visual assets — sprites, backgrounds, UI elements', cnDesc: '创作所有视觉资源——精灵图、背景、UI 元素', bg: 'rgba(255, 130, 180, 0.12)', detail: 'Translates the GDD into visual specifications: color palette, sprite dimensions, UI mockups, animation frames, tilemap layout, and parallax layer composition.', cnDetail: '将游戏设计文档转化为视觉规范：配色方案、精灵尺寸、UI 原型、动画帧、瓦片地图布局和视差层构成。', input: 'Game Design Document', output: 'Visual Design Spec (color, sprites, tiles, UI)' },
-          { name: 'Game Architect', cnName: '游戏架构师', icon: '[+]', desc: 'Designs the code structure, state management, and game loop', cnDesc: '设计代码结构、状态管理和游戏循环', bg: 'rgba(130, 200, 255, 0.12)', detail: 'Designs the software architecture: module decomposition, state machine, game loop structure, collision detection strategy, scoring system, and data flow between components.', cnDetail: '设计软件架构：模块拆分、状态机、游戏循环结构、碰撞检测策略、计分系统和组件间数据流。', input: 'GDD + Visual Spec', output: 'Technical Architecture Doc' },
-          { name: 'Game Coder', cnName: '游戏工程师', icon: '[C]', desc: 'Writes clean, performant game code — HTML, Canvas, CSS animations', cnDesc: '编写干净高性能的游戏代码——HTML, Canvas, CSS 动画', bg: 'rgba(100, 220, 180, 0.12)', detail: 'Writes production-ready game code in a single self-contained HTML file. Implements all mechanics, rendering, input handling, sound effects (Web Audio API), and performance optimization.', cnDetail: '编写可直接运行的单一 HTML 游戏文件。实现所有玩法、渲染、输入处理、音效（Web Audio API）和性能优化。', input: 'Architecture Doc + Visual Spec', output: 'index.html (playable game)' },
-          { name: 'Game Tester', cnName: '游戏测试官', icon: '[T]', desc: 'Runs the game, finds bugs, suggests balance and polish tweaks', cnDesc: '运行游戏、发现 bug、建议平衡性和润色调整', bg: 'rgba(255, 200, 80, 0.12)', detail: 'Loads and plays the game, performing systematic test cases: boundary conditions, input edge cases, collision edge cases, performance profiling, balance validation. Outputs a structured bug report with severity levels and fix recommendations.', cnDetail: '加载并试玩游戏，执行系统性测试用例：边界条件、输入边缘情况、碰撞边缘情况、性能分析和平衡性验证。输出结构化 Bug 报告，附带严重等级和修复建议。', input: 'index.html + Architecture Doc', output: 'Bug Report + Polish Suggestions' },
-          { name: 'Game Publisher', cnName: '游戏发行官', icon: '[P]', desc: 'Packages and deploys the final game — shareable, playable URL', cnDesc: '打包并部署最终游戏——生成可分享、可玩的 URL', bg: 'rgba(255, 130, 130, 0.12)', detail: 'Finalizes the game package: minifies code, generates metadata (thumbnail, title, description), creates the deployable artifact, and writes the entry to the game gallery JSON.', cnDetail: '完成游戏打包：代码压缩、生成元数据（缩略图、标题、描述）、创建可部署产物、将条目写入游戏画廊 JSON。', input: 'Final index.html + Bug Report', output: 'Deployed URL + games.json entry' },
-        ]},
-        { label: 'QA & Deploy Gate', agents: [
-          { name: 'Web Fixer', cnName: '网页修复专家', icon: '[W]', desc: 'Verifies live rendering on GitHub Pages, catches CDN/deploy issues', cnDesc: '验证 GitHub Pages 线上渲染效果，发现 CDN/部署问题', bg: 'rgba(255, 150, 50, 0.12)', detail: 'Visits the deployed live URL via web_fetch, checks HTTP status, verifies SPA rendering, catches CDN cache issues, path typos, and 404 fallback problems. Auto-fixes and re-deploys.', cnDetail: '通过 web_fetch 访问已部署的线上 URL，检查 HTTP 状态、验证 SPA 渲染效果、发现 CDN 缓存问题、路径大小写错误和 404 fallback。自动修复并重新部署。', input: 'Deployed URL + Source Code', output: 'Verified Live URL + Fix Report' },
-          { name: 'Project Overseer', cnName: '项目监督负责人', icon: '[O]', desc: 'Gatekeeper — reviews all agent output for quality before delivery', cnDesc: '守门员——在所有 Agent 输出交付前进行质量审查', bg: 'rgba(200, 200, 255, 0.15)', detail: 'Performs a multi-dimensional quality review: (1) agent file completeness, (2) website quality (emoji check, broken links, responsive), (3) game code static analysis (memory leaks, collision bugs, edge cases), (4) build and deploy verification. Runs 5 rounds of review-fix cycles.', cnDetail: '执行多维度质量审查：(1) Agent 文件完整性 (2) 网站品质 (emoji 检查、链接失效、响应式) (3) 游戏代码静态分析（内存泄漏、碰撞 Bug、边界情况）(4) 构建部署验证。运行 5 轮审查-修复循环。', input: 'All agent outputs + Final code', output: 'Quality Pass / Bug Report' },
-        ]},
-      ],
-      isLoading: false,
-      showSuccess: false,
-      loadingStep: -1,
-      downloadUrl: `${BASE}/downloads/agent-pack-v1.zip`,
-      // agents array removed — now inline in pipelineStages
-      realWorks: [
-        {
-          title: 'MiniCraft 3D', tag: 'New',
-          desc: 'First-person sandbox world in Three.js — 7 block types, terrain generation, trees, dynamic lighting. Explore, destroy, and build.',
-          cnDesc: 'Three.js 第一人称沙盒世界 — 7 种方块、地形生成、树木、动态光照。探索、破坏和建造。',
-          url: `${BASE}/games/minecraft-3d/`,
-          prompt: '一个超小的 3D 网页版 Minecraft',
-        },
-        {
-          title: 'Dino Run', tag: 'Demo',
-          desc: 'Endless runner with a cute T-Rex — jump over cacti, dodge flying birds, and see how far you can go. Procedural terrain, parallax stars, and particle effects.',
-          cnDesc: '萌系小恐龙无限跑酷——跳跃躲避仙人掌和飞鸟，看你能跑多远。程序化地形、视差星空、粒子特效。',
-          url: `${BASE}/games/dino-run/`,
-          prompt: '做一个用空格跳跃的小恐龙跑酷游戏',
-        },
-        {
-          title: 'Space Shooter', tag: 'Demo',
-          desc: 'Top-down space shooter — mouse to fly, click to fire. Three enemy types with different movement patterns, shield system, and explosive particle effects.',
-          cnDesc: '俯视角太空射击——鼠标飞行、点击开火。三种敌人类型各有不同移动模式，护盾系统和爆炸粒子特效。',
-          url: `${BASE}/games/space-shooter/`,
-          prompt: '帮我做一个太空射击游戏，鼠标控制飞船移动、点击发射子弹、打敌机',
-        },
-        {
-          title: 'Star Shatter', tag: 'Demo',
-          desc: 'Neon cyberpunk Breakout — rainbow bricks, particle explosions, combo scoring, 8 progressive stages, metal bricks, and floating challenges.',
-          cnDesc: '霓虹赛博朋克打砖块——彩虹砖块、粒子爆炸、连击计分、8 个难度递进关卡、金属砖块、浮动挑战。',
-          url: `${BASE}/games/breakout/`,
-          prompt: '做一个打砖块 Breakout 游戏',
-        },
-      ],
-      capabilities: [
-        { text: 'Single-sentence game concept → fully playable web game', cnText: '一句话游戏概念 → 完整可玩的网页游戏', color: 'var(--pink)' },
-        { text: 'Canvas 2D, DOM-based, or hybrid rendering engine', cnText: 'Canvas 2D、DOM 或混合渲染引擎', color: 'var(--accent)' },
-        { text: 'Procedural content generation (levels, items, enemies)', cnText: '程序化内容生成（关卡、道具、敌人）', color: 'hsl(342, 80%, 70%)' },
-        { text: 'Mobile-responsive, touch-friendly controls', cnText: '移动端响应式、触屏友好操作', color: 'hsl(168, 80%, 50%)' },
-        { text: 'Instant deploy — share a URL to your finished game', cnText: '即时部署——分享 URL 即可畅玩成品游戏', color: 'hsl(252, 60%, 70%)' },
-        { text: 'Iterate as many times as you want — refine the output', cnText: '无限次迭代——反复打磨输出成果', color: 'var(--pink)' },
-      ],
-      techs: ['Vue 3', 'HTML5 Canvas', 'JavaScript', 'CSS Animations', 'OpenClaw Subagents', 'GitHub Pages', 'EasyClaw Link'],
-    }
-  },
-  mounted() {
-    window.addEventListener('scroll', this.onScroll);
-      try {
-        var saved = JSON.parse(localStorage.getItem('aiGameStudioComments'));
-        if (saved && Array.isArray(saved)) this.comments = saved;
-      } catch(e) {}
-    this.$nextTick(() => this.setupObserver())
-  },
-  beforeDestroy() {
-    window.removeEventListener('scroll', this.onScroll)
-  },
-  methods: {
-    toggleLang() {
-      this.lang = this.lang === 'en' ? 'zh' : 'en'
-      localStorage.setItem('aiGameStudioLang', this.lang)
-    },
-    toggleAgent(name) {
-      this.expandedAgent = this.expandedAgent === name ? null : name
-    },
-    onScroll() {
-      this.scrolled = window.scrollY > 60
-      // Update active nav section based on scroll position
-      const sections = ['pipeline', 'works', 'about', 'cta', 'comments']
-      for (const id of sections) {
-        const el = document.getElementById(id)
-        if (el) {
-          const rect = el.getBoundingClientRect()
-          if (rect.top <= 200 && rect.bottom >= 200) {
-            this.activeSection = id
-            break
-          }
-        }
-      }
-    },
-    setupObserver() {
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible')
-          }
-        })
-      }, { threshold: 0.1 })
-      document.querySelectorAll('.reveal').forEach(el => observer.observe(el))
-
-      // IntersectionObserver for nav highlight
-      const navObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            this.activeSection = entry.target.id
-          }
-        })
-      }, { threshold: 0.3 })
-      document.querySelectorAll('section[id]').forEach(el => navObserver.observe(el))
-    },
-
-    scrollTo(sel) {
-      const el = document.querySelector(sel)
-      if (el) el.scrollIntoView({ behavior: 'smooth' })
-      // If scrolling to hero, focus the input
-      if (sel === '#hero') {
-        setTimeout(() => {
-          document.querySelector('.hero-input-area input')?.focus()
-        }, 500)
-      }
-    },
-    openGame(url) {
-      window.open(url, '_blank')
-    },
-    submitComment() {
-      var text = this.commentText.trim();
-      if (!text) return;
-      this.comments.unshift({
-        name: this.commentName.trim(),
-        text: text,
-        time: new Date().toLocaleDateString(this.lang === 'en' ? 'en-US' : 'zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-      });
-      try {
-        localStorage.setItem('aiGameStudioComments', JSON.stringify(this.comments));
-      } catch(e) {}
-      this.commentText = '';
-    },
-    handleIdea() {
-      const idea = this.ideaInput.trim()
-      if (!idea) {
-        this.showSuccess = false
-        this.ideaInput = ''
-        const msg = this.lang === 'en' ? 'Please enter an idea' : '请输入想法'
-        const input = document.querySelector('.hero-input-area input')
-        const orig = input?.placeholder
-        if (input) {
-          input.placeholder = msg
-          setTimeout(() => { if (input) input.placeholder = orig }, 1500)
-        }
-        return
-      }
-      this.isLoading = true
-      this.showSuccess = false
-      this.loadingStep = -1
-      const steps = ['Game Designer', 'Pixel Artist', 'Game Architect', 'Game Coder', 'Game Tester', 'Game Publisher']
-      const interval = setInterval(() => {
-        this.loadingStep++
-        if (this.loadingStep >= steps.length) {
-          clearInterval(interval)
-          setTimeout(() => {
-            this.isLoading = false
-            this.showSuccess = true
-            this.loadingStep = -1
-          }, 300)
-        }
-      }, 500)
-    },
-  }
-}
-</script>
+      </section>
+    </template>
+    <template v-if="v==='games'">
+      <section class="section" style="padding-top:140px">        <div class="container">          <div class="pipeline-header reveal"><h2 v-html="t('Game <span class=__gtext__>Library</span>','\u6e38\u620f<span class=__gtext__>\u5e93</span>')"></h2><p>{{ t('4 games created by our 6-agent pipeline.','6 Agent \u6d41\u6c34\u7ebf\u4ea7\u51fa\u7684 4 \u6b3e\u6e38\u620f\u3002') }}</p>          </div>          <div class="works-grid">            <div class="work-card reveal">              <div class="work-header"><div class="work-icon">/ai-game-studio/games/minecraft-3d/</div><div class="work-title">MiniCraft 3D</div><span class="work-tag">New</span></div>              <div class="work-desc">{{ t('First-person sandbox in Three.js','Three.js \u7b2c\u4e00\u4eba\u79f0\u6c99\u76d2') }}</div>              <div class="work-actions">                <a :href="'/ai-game-studio/games/minecraft-3d/'" target="_blank" class="liquid-glass-btn work-btn" @click.prevent="openGame('/ai-game-studio/games/minecraft-3d/')"><span>[&gt;]</span>{{ t('Play Now','\u7acb\u5373\u8bd5\u73a9') }}</a>                <span class="work-input">Prompt: <em>[C]</em></span>              </div>            </div>            <div class="work-card reveal">              <div class="work-header"><div class="work-icon">/ai-game-studio/games/dino-run/</div><div class="work-title">Dino Run</div><span class="work-tag">Demo</span></div>              <div class="work-desc">{{ t('Endless runner with T-Rex','\u840c\u7cfb\u5c0f\u6050\u9f99\u65e0\u9650\u8dd1\u9177') }}</div>              <div class="work-actions">                <a :href="'/ai-game-studio/games/dino-run/'" target="_blank" class="liquid-glass-btn work-btn" @click.prevent="openGame('/ai-game-studio/games/dino-run/')"><span>[&gt;]</span>{{ t('Play Now','\u7acb\u5373\u8bd5\u73a9') }}</a>                <span class="work-input">Prompt: <em>[D]</em></span>              </div>            </div>            <div class="work-card reveal">              <div class="work-header"><div class="work-icon">/ai-game-studio/games/space-shooter/</div><div class="work-title">Space Shooter</div><span class="work-tag">Demo</span></div>              <div class="work-desc">{{ t('Top-down space shooter','\u4fef\u89c6\u89d2\u592a\u7a7a\u5c04\u51fb') }}</div>              <div class="work-actions">                <a :href="'/ai-game-studio/games/space-shooter/'" target="_blank" class="liquid-glass-btn work-btn" @click.prevent="openGame('/ai-game-studio/games/space-shooter/')"><span>[&gt;]</span>{{ t('Play Now','\u7acb\u5373\u8bd5\u73a9') }}</a>                <span class="work-input">Prompt: <em>[S]</em></span>              </div>            </div>            <div class="work-card reveal">              <div class="work-header"><div class="work-icon">/ai-game-studio/games/breakout/</div><div class="work-title">Star Shatter</div><span class="work-tag">Demo</span></div>              <div class="work-desc">{{ t('Neon cyberpunk Breakout','\u9713\u8679\u8d5b\u535a\u670b\u514b\u6253\u7816\u5757') }}</div>              <div class="work-actions">                <a :href="'/ai-game-studio/games/breakout/'" target="_blank" class="liquid-glass-btn work-btn" @click.prevent="openGame('/ai-game-studio/games/breakout/')"><span>[&gt;]</span>{{ t('Play Now','\u7acb\u5373\u8bd5\u73a9') }}</a>                <span class="work-input">Prompt: <em>[B]</em></span>              </div>            </div>          </div>        </div>      </section>    </template>    <template v-if="v==='pipeline'">      <section class="section pipeline" style="padding-top:140px">        <div class="container">          <div class="pipeline-header reveal"><h2 v-html="t('The <span class=__gtext__>Agent Assembly</span> Line','<span class=__gtext__>Agent \u6d41\u6c34\u7ebf</span>')"></h2><p>{{ t('Eight specialized AI agents, each with a unique craft.','\u516b\u4e2a\u4e13\u5c5e AI Agent\uff0c\u5404\u53f8\u5176\u804c\u3002') }}</p>          </div>          <div class="pipeline-flow">            <div class="pipeline-stage" v-for="(st,si) in stages" :key="si">              <div class="stage-label">{{ st.l }}</div>              <div class="stage-agents">                <div v-for="(a,i) in st.a" :key="a.n" class="agent-card reveal" :style="{transitionDelay:(si*4+i)*.05+'s'}" @click="toggleAgent(a.n)">                  <div class="agent-icon" :style="{background:a.bg}">{{ a.i }}</div>                  <div class="agent-info"><div class="agent-name">{{ t(a.n,a.cn) }}</div><div class="agent-desc">{{ t(a.d,a.cd) }}</div></div>                  <div v-if="expanded===a.n" class="agent-detail">                    <div class="agent-detail-inner">                      <p>{{ t(a.dt,a.cdt) }}</p>                      <div class="agent-detail-tags"><span class="agent-detail-tag"><span class="tag-label">{{ t('INPUT','\u8f93\u5165') }}</span><span>{{ a.inp }}</span></span><span class="agent-detail-tag"><span class="tag-label">{{ t('OUTPUT','\u8f93\u51fa') }}</span><span>{{ a.out }}</span></span>                      </div>                    </div>                  </div>                </div>              </div>              <div v-if="si<stages.length-1" class="stage-connector"><span class="connector-arrow">\u25bc</span></div>            </div>          </div>          <div class="pipeline-stats reveal" style="margin-top:60px;display:flex;gap:32px;justify-content:center;flex-wrap:wrap">            <div class="stat-card" v-for="s in stats" :key="s.l"><div class="stat-value">{{ s.v }}</div><div class="stat-label">{{ s.l }}</div></div>          </div>        </div>      </section>    </template>    <template v-if="v==='discussion' && !activeTopic">      <section class="section" style="padding-top:140px">        <div class="container">          <div class="pipeline-header reveal"><h2 v-html="t('Multi-Agent <span class=__gtext__>Discussion</span>','\u591a Agent <span class=__gtext__>\u8ba8\u8bba\u533a</span>')"></h2><p>{{ t('Topics, threaded replies, community moderation \u2014 3 agents.','\u8bdd\u9898\u3001\u5d4c\u5957\u56de\u590d\u3001\u793e\u533a\u5ba1\u6838\u2014\u20143 Agent\u3002') }}</p>          </div>          <div class="discussion-layout" style="max-width:800px;margin:0 auto">            <div class="glass" style="padding:24px;border-radius:24px;margin-bottom:24px">              <div v-if="!showForm"><button class="liquid-glass-btn" @click="showForm=true" style="padding:12px 28px;border-radius:100px;font-size:14px">[+] {{ t('New Topic','\u521b\u5efa\u65b0\u8bdd\u9898') }}</button><div style="margin-top:8px;font-size:11px;color:var(--muted);opacity:.5">{{ t('Moderated by Validator, Moderator, Summarizer agents','\u7531\u9a8c\u8bc1\u5668\u3001\u4e3b\u6301\u4eba\u3001\u6458\u8981\u5e08\u4e09\u4e2a Agent \u5ba1\u6838') }}</div>              </div>              <div v-if="showForm"><input v-model="newT" :placeholder="t('Topic title...','\u8bdd\u9898\u6807\u9898...')" style="width:100%;padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);color:#fff;font-size:15px;margin-bottom:10px" /><textarea v-model="newB" :placeholder="t('Describe your topic...','\u63cf\u8ff0\u8bdd\u9898...')" rows="3" style="width:100%;padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);color:#fff;font-size:14px;resize:vertical;margin-bottom:10px"></textarea>                <div style="display:flex;gap:10px"><button class="liquid-glass-btn" @click="createTopic" :disabled="!newT.trim()" style="padding:10px 24px;border-radius:100px;font-size:13px">{{ t('Create','\u521b\u5efa') }}</button><button class="liquid-glass-btn" @click="showForm=false;newT='';newB=''" style="padding:10px 24px;border-radius:100px;font-size:13px;opacity:.5">{{ t('Cancel','\u53d6\u6d88') }}</button>                </div>                <div v-if="validation" style="margin-top:8px;padding:8px 14px;border-radius:8px;font-size:12px" :class="validation.ok?'pass-msg':'fail-msg'">                  <span v-if="validation.ok">\u2705 [Validator] {{ validation.msg }}</span>                  <span v-else>\U0001F6E1\uFE0F [Moderator] {{ validation.msg }}</span>                </div>              </div>            </div><div v-if="topics.length===0" class="glass" style="padding:48px;border-radius:24px;text-align:center"><div style="font-size:36px">[\U0001F4AC]</div><p style="color:var(--muted);font-size:14px">{{ t('No topics yet. Create the first one!','\u8fd8\u6ca1\u6709\u8bdd\u9898\u3002\u521b\u5efa\u7b2c\u4e00\u4e2a\u5427\uff01') }}</p></div><div v-for="top in topics" :key="top.id" class="topic-card glass" style="padding:24px;border-radius:20px;margin-bottom:16px;cursor:pointer" @click="activeTopic=top">  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">    <div style="flex:1">      <h3 style="font-family:var(--font-display);font-size:20px;margin-bottom:4px">{{ top.title }}</h3>      <p v-if="top.body" style="font-size:13px;color:var(--muted);margin-bottom:8px">{{ top.body }}</p>      <div style="display:flex;gap:16px;font-size:11px;color:var(--muted);opacity:.6">        <span>{{ top.author||'Anonymous' }}</span><span>{{ top.time }}</span>        <span>{{ top.r.length }} {{ t('replies','\u56de\u590d') }}</span><span>{{ top.up }} {{ t('upvotes','\u70b9\u8d5e') }}</span>      </div>    </div>    <div style="display:flex;flex-direction:column;align-items:center;gap:4px">      <button class="vote-btn" @click.stop="upvote(top.id)">\u25b2</button>      <span style="font-size:13px;font-family:var(--font-mono)">{{ top.up }}</span>    </div>  </div><div v-if="top.summary" style="margin-top:12px;padding:10px 14px;background:rgba(168,130,255,.06);border-radius:10px;font-size:12px;color:hsl(252,50%,75%)"><span style="opacity:.6">[Summarizer]</span> {{ top.summary }}</div></div>          </div>        </div>      </section>    </template>    <template v-if="activeTopic">      <section class="section" style="padding-top:140px">        <div class="container" style="max-width:800px"><button class="liquid-glass-btn" @click="activeTopic=null" style="padding:8px 20px;border-radius:100px;font-size:12px;margin-bottom:24px">\u2190 {{ t('Back','\u8fd4\u56de') }}</button>          <div class="glass" style="padding:32px;border-radius:24px;margin-bottom:24px">            <h2 style="font-family:var(--font-display);font-size:28px;margin-bottom:8px">{{ activeTopic.title }}</h2>            <p v-if="activeTopic.body" style="font-size:14px;color:var(--muted);margin-bottom:12px">{{ activeTopic.body }}</p>            <div style="display:flex;gap:16px;font-size:12px;color:var(--muted);opacity:.6">              <span>{{ activeTopic.author||'Anonymous' }}</span><span>{{ activeTopic.time }}</span>              <button class="vote-btn-sm" @click="upvote(activeTopic.id)">\u25b2 {{ activeTopic.up }}</button>            </div>          </div>          <div class="glass" style="padding:24px;border-radius:24px;margin-bottom:24px"><input v-model="rName" :placeholder="t('Your name','\u4f60\u7684\u540d\u5b57')" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);color:#fff;font-size:14px;margin-bottom:8px" /><textarea v-model="rText" :placeholder="t('Write a reply...','\u5199\u4e0b\u56de\u590d...')" rows="2" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);color:#fff;font-size:14px;resize:vertical;margin-bottom:8px"></textarea>            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="liquid-glass-btn" @click="addReply" :disabled="!rText.trim()" style="padding:8px 20px;border-radius:100px;font-size:13px">{{ t('Post Reply','\u53d1\u8868\u56de\u590d') }}</button><span style="font-size:11px;color:var(--muted);opacity:.5">[Moderator] {{ t('auto-moderated','\u81ea\u52a8\u5ba1\u6838') }}</span>            </div>          </div><div v-if="activeTopic.r.length===0" class="glass" style="padding:32px;border-radius:24px;text-align:center;color:var(--muted);font-size:13px;opacity:.5">{{ t('No replies yet.','\u6682\u65e0\u56de\u590d\u3002') }}</div>          <div v-for="(rp,ri) in activeTopic.r" :key="ri" class="glass" style="padding:20px;border-radius:20px;margin-bottom:12px">            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">              <span style="font-size:13px;color:var(--green);font-family:var(--font-mono)">[#{{ ri+1 }}]</span>              <span style="font-size:13px;font-weight:500">{{ rp.n||'Anonymous' }}</span>              <span style="font-size:11px;color:var(--muted);opacity:.5">{{ rp.t }}</span>              <div style="margin-left:auto"><button class="vote-btn-xs" @click.stop="upvoteReply(activeTopic.id,ri)">\u25b2 {{ rp.up||0 }}</button></div>            </div>            <p style="font-size:13px;color:var(--muted);line-height:1.6;white-space:pre-wrap">{{ rp.text }}</p>            <div v-if="rp.rr&&rp.rr.length>0" style="margin-top:12px;margin-left:24px;padding-left:16px;border-left:1px solid rgba(255,255,255,.06)">              <div v-for="(nr,nri) in rp.rr" :key="nri" style="padding:10px 0;border-top:1px solid rgba(255,255,255,.03)">                <div><span style="font-size:12px;font-weight:500;color:var(--accent)">{{ nr.n||'Anonymous' }}</span><span style="font-size:10px;color:var(--muted);opacity:.4"> {{ nr.t }}</span></div>                <p style="font-size:12px;color:var(--muted);line-height:1.5">{{ nr.text }}</p>              </div>            </div>            <div v-if="rp.showNest" style="margin-top:10px;margin-left:24px"><textarea v-model="nestT" :placeholder="t('Write a nested reply...','\u5199\u4e0b\u5d4c\u5957\u56de\u590d...')" rows="1" style="width:100%;padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);color:#fff;font-size:12px;resize:vertical;margin-bottom:6px"></textarea>              <div style="display:flex;gap:8px"><button class="liquid-glass-btn" @click="addNest(ri)" :disabled="!nestT.trim()" style="padding:6px 16px;border-radius:100px;font-size:11px">{{ t('Reply','\u56de\u590d') }}</button><button class="liquid-glass-btn" @click="rp.showNest=false;nestT=''" style="padding:6px 16px;border-radius:100px;font-size:11px;opacity:.5">{{ t('Cancel','\u53d6\u6d88') }}</button>              </div>            </div><button v-if="!rp.showNest" @click.stop="rp.showNest=true" style="margin-top:8px;margin-left:24px;padding:4px 12px;border-radius:100px;border:none;background:rgba(255,255,255,.03);color:var(--muted);font-size:11px;cursor:pointer">\u2936 {{ t('Reply','\u56de\u590d') }}</button>          </div>        </div>      </section>    </template>    <template v-if="v==='about'">      <section class="section" style="padding-top:140px">        <div class="container">          <div class="pipeline-header reveal"><h2 v-html="t('About <span class=__gtext__>AI Game Studio</span>','\u5173\u4e8e<span class=__gtext__>AI \u6e38\u620f\u5de5\u4f5c\u5ba4</span>')"></h2><p>{{ t('Built for the 2025 Fosun AI Hackathon.','\u4e3a 2025 \u590d\u661f AI \u9ed1\u5ba2\u677e\u6253\u9020\u3002') }}</p>          </div>          <div class="glass" style="padding:40px;border-radius:24px;max-width:700px;margin:0 auto">            <div class="caps-grid">              <div v-for="(c,i) in caps" :key="c.en" class="cap-item reveal" :style="{transitionDelay:i*.06+'s'}">                <div class="cap-dot" :style="{background:c.c}"></div>                <div class="cap-text">{{ t(c.en,c.cn) }}</div>              </div>            </div>            <div class="tech-tags" style="margin-top:32px;justify-content:flex-start">              <span class="tech-tag" v-for="t in techs" :key="t">{{ t }}</span>            </div>          </div>        </div>      </section>    </template><footer class="footer">  <div class="container footer-inner"><div class="footer-copy">{{ t('AI Game Studio \u2014 multi-agent AI. Continuously developing.','AI \u6e38\u620f\u5de5\u4f5c\u5ba4 \u2014 \u591a Agent AI\u3002\u6301\u7eed\u5f00\u53d1\u4e2d\u3002') }}</div>    <div class="footer-links">      <a href="https://github.com/NSIETeam/ai-game-studio" target="_blank">GitHub</a>      <a href="https://nsieteam.github.io/ai-finance-legion/" target="_blank">Finance Legion</a>      <a href="https://easyclaw.link" target="_blank">EasyClaw</a>      <span style="font-size:11px;color:rgba(255,255,255,.2)">{{ t('WIP','\u5f00\u53d1\u4e2d') }}</span>    </div>  </div></footer>  </div></template><script>var BASE = "/ai-game-studio";
+export default {  name: "App",  data() {    var d = {      lang: localStorage.getItem('aiGameStudioLang') || 'en',      v: 'home', scrolled: false, expanded: null,      showForm: false, newT: '', newB: '', validation: null,      rName: '', rText: '', nestT: '', activeTopic: null,      topics: [], topId: 1,
+      stats: [        {l:'Active Agents',v:'8'},{l:'Games Created',v:'4'},{l:'Stages',v:'2'},{l:'Agent Logic',v:'840+'},      ],      stages: [{l:'Creation Pipeline',a:[        {n:'Game Designer',cn:'策划官',i:'[D]',d:'Defines mechanics',cd:'定义玩法',bg:'rgba(168,130,255,.12)',dt:'Analyzes your idea into a full Game Design Document.',cdt:'分析您的创意并展开为完整游戏设计文档。',inp:'Idea',out:'GDD'},        {n:'Pixel Artist',cn:'美术师',i:'[A]',d:'Creates sprites & UI',cd:'创作精灵图和UI',bg:'rgba(255,130,180,.12)',dt:'Translates GDD into visual specifications.',cdt:'将游戏设计文档转化为视觉规范。',inp:'GDD',out:'Visual Spec'},        {n:'Game Architect',cn:'架构师',i:'[+]',d:'Designs code structure',cd:'设计代码结构',bg:'rgba(130,200,255,.12)',dt:'Designs module decomposition, state machine.',cdt:'设计模块拆分和状态机。',inp:'GDD+Spec',out:'Arch Doc'},        {n:'Game Coder',cn:'工程师',i:'[C]',d:'Writes game code',cd:'编写游戏代码',bg:'rgba(100,220,180,.12)',dt:'Writes self-contained HTML game with all mechanics.',cdt:'编写包含所有玩法的单一HTML游戏文件。',inp:'Arch Doc',out:'index.html'},        {n:'Game Tester',cn:'测试官',i:'[T]',d:'Finds bugs',cd:'发现Bug',bg:'rgba(255,200,80,.12)',dt:'Runs systematic tests and outputs bug report.',cdt:'运行系统性测试并输出Bug报告。',inp:'index.html',out:'Bug Report'},        {n:'Game Publisher',cn:'发行官',i:'[P]',d:'Deploys game',cd:'部署游戏',bg:'rgba(255,130,130,.12)',dt:'Creates deployable artifact and gallery entry.',cdt:'创建可部署产物和画廊条目。',inp:'Final code',out:'URL'},      ]},{l:'QA & Deploy',a:[        {n:'Web Fixer',cn:'修复专家',i:'[W]',d:'Verifies live rendering',cd:'验证线上渲染',bg:'rgba(255,150,50,.12)',dt:'Checks live URL for CDN/404/SPA issues.',cdt:'检查线上URL的CDN/404/SPA问题。',inp:'URL',out:'Verification'},        {n:'Project Overseer',cn:'监督人',i:'[O]',d:'Quality gatekeeper',cd:'质量守门员',bg:'rgba(200,200,255,.15)',dt:'Multi-dimensional: completeness, links, bugs, deploy.',cdt:'多维度审查：完整性、链接、Bug、部署。',inp:'All outputs',out:'Report'},      ]}],      works: [        {t:'MiniCraft 3D',tag:'New',d:'First-person sandbox in Three.js',cd:'Three.js 第一人称沙盒',u:BASE+'/games/minecraft-3d/',i:'[C]',p:'一个超小的3D网页版Minecraft'},        {t:'Dino Run',tag:'Demo',d:'Endless runner with T-Rex',cd:'萌系小恐龙无限跑酷',u:BASE+'/games/dino-run/',i:'[D]',p:'做一个用空格跳跃的小恐龙跑酷游戏'},        {t:'Space Shooter',tag:'Demo',d:'Top-down space shooter',cd:'俯视角太空射击',u:BASE+'/games/space-shooter/',i:'[S]',p:'帮我做一个太空射击游戏'},        {t:'Star Shatter',tag:'Demo',d:'Neon cyberpunk Breakout',cd:'霓虹赛博朋克打砖块',u:BASE+'/games/breakout/',i:'[B]',p:'做一个打砖块Breakout游戏'},      ],      caps: [        {en:'Single-sentence concept to playable web game',cn:'一句话概念到完整可玩网页游戏',c:'var(--pink)'},        {en:'Canvas 2D, DOM, or hybrid rendering',cn:'Canvas 2D、DOM或混合渲染',c:'var(--accent)'},        {en:'Procedural content generation',cn:'程序化内容生成',c:'hsl(342,80%,70%)'},        {en:'Mobile-responsive, touch-friendly',cn:'移动端响应式、触屏友好',c:'hsl(168,80%,50%)'},        {en:'Instant deploy - share URL',cn:'即时部署-分享URL',c:'hsl(252,60%,70%)'},        {en:'Infinite iteration cycles',cn:'无限次迭代',c:'var(--pink)'},      ],      techs: ['Vue 3','HTML5 Canvas','JavaScript','CSS Animations','OpenClaw Subagents','GitHub Pages','EasyClaw Link'],    };    try { var s = JSON.parse(localStorage.getItem('gsTopics')); if (s && Array.isArray(s)) d.topics = s; } catch(e) {}    return d;  },  computed: {    t() { return function(en, zh) { return this.lang === 'en' ? en : zh; }; }  },  mounted() {    window.addEventListener('scroll', this.onScroll);    this.$nextTick(() => {      var ob = new IntersectionObserver((es) => {        es.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });      }, {threshold:0.1});      document.querySelectorAll('.reveal').forEach(el => ob.observe(el));    });  },  beforeDestroy() { window.removeEventListener('scroll', this.onScroll); },  methods: {    toggleLang() { this.lang = this.lang === 'en' ? 'zh' : 'en'; localStorage.setItem('aiGameStudioLang', this.lang); },    setView(v) { this.v = v; window.scrollTo(0,0); },    goHome() { this.v = 'home'; this.activeTopic = null; window.scrollTo(0,0); },    openGame(url) { window.open(url, '_blank'); },    toggleAgent(n) { this.expanded = this.expanded === n ? null : n; },    onScroll() { this.scrolled = window.scrollY > 60; },    createTopic() {      var title = this.newT.trim();      if (!title) return;      if (title.length < 3) { this.validation = {ok:false, msg:'Title too short (min 3 chars).'}; return; }      if (title.length > 100) { this.validation = {ok:false, msg:'Title too long (max 100 chars).'}; return; }      var topic = {        id: this.topId++, title: title, body: this.newB.trim(),        author: 'Guest',        time: new Date().toLocaleDateString('en-US', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}),        up: 1, r: [],        summary: 'Topic approved. ' + (title.length > 50 ? 'Consider shorter title.' : 'Good title length.')      };      this.topics.unshift(topic);      this.saveTopics();      this.showForm = false; this.newT = ''; this.newB = ''; this.validation = null;    },    upvote(id) { var t = this.topics.find(x => x.id === id); if (t) t.up++; },    upvoteReply(id, ri) { var t = this.topics.find(x => x.id === id); if (t && t.r[ri]) { t.r[ri].up = (t.r[ri].up || 0) + 1; } },    addReply() {      if (!this.rText.trim() || !this.activeTopic) return;      this.activeTopic.r.push({        n: this.rName.trim() || 'Guest', text: this.rText.trim(),        t: new Date().toLocaleDateString('en-US', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}),        up: 0, rr: [], showNest: false      });      this.rText = ''; this.saveTopics();    },    addNest(ri) {      if (!this.nestT.trim() || !this.activeTopic || !this.activeTopic.r[ri]) return;      this.activeTopic.r[ri].rr.push({        n: this.rName.trim() || 'Guest', text: this.nestT.trim(),        t: new Date().toLocaleDateString('en-US', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})      });      this.nestT = ''; this.activeTopic.r[ri].showNest = false; this.saveTopics();    },    saveTopics() { try { localStorage.setItem('gsTopics', JSON.stringify(this.topics)); } catch(e) {} },  }}</script>
