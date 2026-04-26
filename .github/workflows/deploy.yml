@@ -26,7 +26,11 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
-      - run: npm run build
+      - run: npx vite build
+      - name: Copy games to docs
+        run: |
+          mkdir -p docs/games
+          cp -r games/* docs/games/
       - uses: actions/configure-pages@v4
       - uses: actions/upload-pages-artifact@v3
         with:
