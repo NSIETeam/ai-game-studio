@@ -4,11 +4,11 @@
     <header class="header" :class="{ scrolled: scrolled }">
       <nav class="container header-inner">
         <a href="#" class="logo">
-          <span class="logo-icon">[+]</span>
+          <span class="logo-icon" style="opacity:.6;font-size:18px;font-family:var(--font-mono)">[+]</span>
           <span>{{ lang === 'en' ? 'AI Game Studio' : 'AI 游戏工作室' }}</span>
         </a>
         <button class="lang-toggle" @click="toggleLang">
-          {{ lang === 'en' ? '🇨🇳 中' : '🇬🇧 EN' }}
+          {{ lang === 'en' ? '[CN] zh' : '[EN] EN' }}
         </button>
         <div class="nav">
           <a href="#pipeline" :class="{ active: activeSection === 'pipeline' }">{{ lang === 'en' ? 'Pipeline' : '流水线' }}</a>
@@ -100,8 +100,7 @@
           <p v-if="lang === 'en'">Six specialized AI agents, each bringing a unique craft to your game.</p>
           <p v-else>六个专属 AI Agent，各司其职。</p>
         </div>
-        <div class="pipeline-grid">
-          <!-- Pipeline flow: core 6 → Web Fixer → Overseer (gate) -->
+        <div class="pipeline-flow">
           <div class="pipeline-flow">
             <div class="pipeline-stage" v-for="(stage, si) in pipelineStages" :key="si">
               <div class="stage-label">{{ stage.label }}</div>

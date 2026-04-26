@@ -1,26 +1,52 @@
 [
   {
-    "title": "🦖 小恐龙跑酷",
+    "title": "小恐龙跑酷",
     "slug": "dino-run",
     "desc": "空格跳跃，躲避障碍。经典跑酷玩法的 AI 生成版。",
-    "tags": ["跑酷", "Canvas", "像素风"],
+    "tags": [
+      "跑酷",
+      "Canvas",
+      "像素风"
+    ],
     "prompt": "做一个用空格跳跃的小恐龙跑酷游戏",
     "created": "2026-04-25"
   },
   {
-    "title": "🚀 太空射击",
+    "title": "太空射击",
     "slug": "space-shooter",
     "desc": "鼠标移动飞船，点击开火。击落敌机获得高分。",
-    "tags": ["射击", "Canvas", "太空"],
+    "tags": [
+      "射击",
+      "Canvas",
+      "太空"
+    ],
     "prompt": "帮我做一个太空射击游戏，鼠标控制飞船移动、点击发射子弹、打敌机",
     "created": "2026-04-25"
   },
   {
-    "title": "🧱 星碎 Breakout",
+    "title": "星碎 Breakout",
     "slug": "breakout",
     "desc": "霓虹赛博风打砖块。弹球击碎彩砖，6 关递进，金属砖块 + 浮动砖块。",
-    "tags": ["街机", "Breakout", "霓虹", "Canvas"],
+    "tags": [
+      "街机",
+      "Breakout",
+      "霓虹",
+      "Canvas"
+    ],
     "prompt": "做一个打砖块 Breakout 游戏",
     "created": "2026-04-25"
+  },
+  {
+    "title": "MiniCraft 3D",
+    "slug": "minecraft-3d",
+    "desc": "First-person 3D sandbox — explore, destroy, build in a procedurally generated cube world.",
+    "tags": [
+      "3D",
+      "Three.js",
+      "Sandbox",
+      "Voxel"
+    ],
+    "prompt": "A tiny 3D web-based Minecraft",
+    "created": "2026-04-26"
   }
 ]
